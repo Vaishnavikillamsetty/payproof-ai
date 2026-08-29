@@ -1,0 +1,120 @@
+/* ==========================================================================
+   PayProof AI — Global Design System
+   Tailwind v4 @theme block defines all design tokens as CSS custom properties.
+   Section 8 of build-plan.md: "The Case File" direction.
+   ========================================================================== */
+
+@import "tailwindcss";
+
+/* --------------------------------------------------------------------------
+   Design tokens — Tailwind v4 @theme syntax
+   -------------------------------------------------------------------------- */
+@theme {
+  /* Colors */
+  --color-ink:        #0E1420;   /* Background, headers */
+  --color-ink-light:  #131A27;   /* Card surfaces */
+  --color-ink-border: #1E2A3A;   /* Subtle borders */
+  --color-paper:      #F6F2E9;   /* Evidence cards, light surfaces */
+  --color-teal:       #3FA796;   /* Supported claims, "strong case" */
+  --color-teal-dim:   #2D7A6D;   /* Teal hover */
+  --color-amber:      #E0A339;   /* Weak/borderline, missing evidence */
+  --color-red:        #D6483C;   /* Contradicted claims, timeline conflicts */
+  --color-slate:      #5B6B7C;   /* Secondary text, metadata */
+  --color-slate-light:#8A9BAB;   /* Tertiary text */
+  --color-white:      #FFFFFF;
+
+  /* Typography */
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  /* Font sizes — explicit scale from build plan */
+  --text-meta:    13px;
+  --text-body:    15px;
+  --text-section: 20px;
+  --text-title:   32px;
+}
+
+/* --------------------------------------------------------------------------
+   Base reset and body defaults
+   -------------------------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-ink);
+  color: var(--color-white);
+  min-height: 100svh;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+/* --------------------------------------------------------------------------
+   Utility classes — used consistently across components
+   -------------------------------------------------------------------------- */
+
+/* Typography helpers */
+.font-mono   { font-family: var(--font-mono); }
+.font-body   { font-family: var(--font-body); }
+
+.text-meta    { font-size: 13px; line-height: 1.4; }
+.text-body    { font-size: 15px; line-height: 1.6; }
+.text-section { font-size: 20px; line-height: 1.3; }
+.text-title   { font-size: 32px; line-height: 1.2; }
+
+/* Color text helpers */
+.text-teal   { color: var(--color-teal); }
+.text-amber  { color: var(--color-amber); }
+.text-red    { color: var(--color-red); }
+.text-slate  { color: var(--color-slate); }
+.text-slate-light { color: var(--color-slate-light); }
+.text-white  { color: var(--color-white); }
+.text-paper  { color: var(--color-paper); }
+
+/* Verdict left-edge accent */
+.verdict-edge-teal  { border-left: 4px solid var(--color-teal); }
+.verdict-edge-amber { border-left: 4px solid var(--color-amber); }
+.verdict-edge-red   { border-left: 4px solid var(--color-red); }
+.verdict-edge-slate { border-left: 4px solid var(--color-slate); }
+
+/* Status badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.badge-teal  { background: rgba(63, 167, 150, 0.15); color: var(--color-teal); }
+.badge-amber { background: rgba(224, 163, 57, 0.15);  color: var(--color-amber); }
+.badge-red   { background: rgba(214, 72, 60, 0.15);   color: var(--color-red); }
+.badge-slate { background: rgba(91, 107, 124, 0.15);  color: var(--color-slate-light); }
+
+/* Card surface */
+.card {
+  background: var(--color-ink-light);
+  border: 1px solid var(--color-ink-border);
+  border-radius: 6px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--color-ink); }
+::-webkit-scrollbar-thumb { background: var(--color-ink-border); border-radius: 3px; }
