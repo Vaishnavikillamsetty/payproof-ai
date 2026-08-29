@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String, Numeric, DateTime, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 import uuid
 from app.db.session import Base
 
@@ -19,6 +20,10 @@ class Case(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+    evidence = relationship("Evidence", back_populates="case", cascade="all, delete-orphan")
+    claims = relationship("Claim", back_populates="case", cascade="all, delete-orphan")
+    rule_flags = relationship("RuleFlag", back_populates="case", cascade="all, delete-orphan")
+
 class Evidence(Base):
     __tablename__ = "evidence"
 
@@ -29,6 +34,8 @@ class Evidence(Base):
     content = Column(JSONB, nullable=False)
     event_timestamp = Column(DateTime(timezone=True), nullable=True)
     collected_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    case = relationship("Case", back_populates="evidence")
 
 class Claim(Base):
     __tablename__ = "claims"
@@ -41,6 +48,8 @@ class Claim(Base):
     confidence = Column(Numeric, nullable=True)
     verdict = Column(String, nullable=True)
 
+    case = relationship("Case", back_populates="claims")
+
 class RuleFlag(Base):
     __tablename__ = "rule_flags"
 
@@ -49,6 +58,8 @@ class RuleFlag(Base):
     rule_name = Column(String, nullable=False)
     triggered = Column(Boolean, nullable=False)
     detail = Column(String, nullable=True)
+
+    case = relationship("Case", back_populates="rule_flags")
 
 class AuditLog(Base):
     __tablename__ = "audit_log"

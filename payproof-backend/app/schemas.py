@@ -1,4 +1,4 @@
-from pydantic import BaseModel, UUID4
+from pydantic import BaseModel, ConfigDict, UUID4
 from typing import List, Optional
 from datetime import datetime
 
@@ -22,10 +22,8 @@ class CaseResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
-# Dummy schemas for other resources (can be expanded later)
 class EvidenceResponse(BaseModel):
     id: UUID4
     case_id: UUID4
@@ -35,8 +33,7 @@ class EvidenceResponse(BaseModel):
     event_timestamp: Optional[datetime]
     collected_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ClaimResponse(BaseModel):
     id: UUID4
@@ -47,8 +44,7 @@ class ClaimResponse(BaseModel):
     confidence: Optional[float]
     verdict: Optional[str]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class RuleFlagResponse(BaseModel):
     id: UUID4
@@ -57,8 +53,7 @@ class RuleFlagResponse(BaseModel):
     triggered: bool
     detail: Optional[str]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class CaseDetailResponse(CaseResponse):
     evidence: List[EvidenceResponse] = []
