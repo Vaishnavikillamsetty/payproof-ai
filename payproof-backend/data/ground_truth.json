@@ -1,0 +1,902 @@
+{
+  "d27c20fb-3c07-4bef-b561-8188e750144a": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "a56d3cd9-6beb-4cfe-96d4-3bbf8e923985": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "dc902e8b-4186-49c0-be4a-2a9bd7dad9c7": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "886622e5-1b46-4050-a266-0e415d2bb821": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "cb03ecfd-4512-4c67-b9de-2fd0656524b8": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "8dc0b843-bf32-49cf-bbfd-03571d3dacdc": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "91258610-353e-4677-b422-a4030eee4e4a": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "33d3ee52-9b53-4d40-85ac-86e1f8f0670a": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "d2a64274-98a6-4ada-82da-1c1d64231de8": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "4df46705-d0dc-4b17-914d-704c788574f8": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "22d440ce-0111-449d-9bb5-e0fd4874c58f": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "9a892c2f-2984-4518-a045-cd0bdd6b20ff": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "502984af-2e60-4003-bc69-cf9a80fc09be": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "3b0d6d28-e5de-47bd-ba32-95af9370a065": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "2c8f1e8f-e85b-4f47-9b2e-6cba1aa4f387": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "c09851c0-7fd5-4ec3-8906-3451c543038a": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "79cc4ecf-3b68-4132-9e8b-a0d6ad0f2e9e": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "167923bf-6a0c-4983-a89a-7ed2b92d526f": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "400f6137-60d9-4a6c-8675-4c2ca0c83b6a": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "e4db4736-6ff5-4e4c-bd09-ab1a5fdc1a83": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "a9a72f59-6a06-4479-941b-dd507a8e5f22": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "369770b1-07ef-42a2-ac10-70e8172c5e36": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "64accbda-437c-4c16-ae3c-0a68e5ca705b": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "c5be3499-de28-4106-aad1-5d33135209a3": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "99396a5d-497c-4587-bc87-4d50d3b36d5d": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "a6ed1385-eac6-4a96-abaf-482fb51b0f08": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "9c1bd020-915c-45a1-a404-59fc8424568e": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "10c9dfd5-a48f-4351-bfd4-ba7b32590b1b": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "8f85c429-a155-463d-aa72-51827b8c4de7": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "364ac6d3-1a76-4684-aff7-bf34c4b7e0de": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "e0b891de-36a6-47f3-835d-171399e37ba3": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "4e10dd97-db1b-4b27-a5d7-6441f40d2e6a": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "2eb54aaa-169a-460c-8117-d395a3ec8b6f": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "97ae3340-865e-41e6-bdb5-a6a258956d75": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "7b08e79f-11a1-41fb-b046-148a89a4c9f8": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "b44a0bae-4933-49a3-b4ae-63969aa9e1af": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "19899d6a-3882-4cab-a4c6-584101902778": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "f9500ac1-c016-41c2-b3f7-dd050d0e0ed3": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "333b2b4d-49a5-4d42-a22b-68b86d7748e0": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "2b80f452-173e-41f9-a64d-b758f8abc936": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "6eb15f1f-ae21-41d0-bf0a-be8bf1bfe3d7": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "9606240c-4821-44a5-9f4c-1583b604ef15": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "5f4bdc34-0bd5-4dbb-8f2e-fa7869d6f143": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "a60bf833-4ad7-4a79-900a-9d2e970e15e3": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "57df6f2d-c10f-46c6-a273-d77b3651523e": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "60a8dda0-c0a7-4020-afb3-9b53b8078f62": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "dc141e5c-439a-468c-bc9a-da7acbd6b837": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "d9c61a9f-b4fd-40ed-9f38-1bd5b8082cc8": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "04c55408-d8aa-49d7-9cf8-bb86a244320e": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "bf574406-9020-436a-8c28-4c532e1b1355": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "726bbf60-865d-4a65-bc3d-904bfac5d52c": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "d5de651a-36ee-4038-af7b-c6649f09803d": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "88d4b11b-2e0a-46ba-b3df-e56e1009dce6": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "e2b91e51-4fd5-427d-a7a7-69bd85d7dea2": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "56901d3f-6856-4f32-a41a-a97a745fbd3d": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "dad78547-14b5-4f23-9260-b871c86165a7": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "5d863960-d8ec-4562-925c-dfcfb65bee77": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "6cee11b0-3667-4324-b128-fef4bf721660": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "59ecc74b-5a66-4b0e-bec9-f5291b2b4949": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "6b1a1ab9-a630-41a4-b1ec-5d85b2d593da": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "1a6836a0-bb56-4897-b47a-10ba7db0cebb": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "de00651f-0148-4d09-b4eb-6276bfee4ad0": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "449decde-c528-4e4e-a401-dd7572d081a5": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "a3fdb419-7309-4874-9330-f7d4be7c643c": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "5e391675-82b7-40ff-a6bf-c034a23af9a0": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "114485a3-e168-4298-9055-b14a4ae48159": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "c99fc0d3-322b-475d-bb46-aabc179a06fd": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "314b5d92-fa59-4b87-9574-63246293e591": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "b2b04004-5c08-45b2-9b32-a46bfc8f179e": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "f913f128-4f17-4e95-8489-0200fc26c6bd": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "a3c5ecf5-73a7-43cf-9c6f-3dd0304b53b1": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "96351001-a019-4136-ae0b-ba775ede0395": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "38ef9b0a-a5b4-4a76-a96a-dc2c9b235d58": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "e6a4095e-4ec4-463b-a1e7-7797e5c8d4f8": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "ea6f2576-b3a4-403e-8194-9ab9ddd84ce5": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "5a698286-f96f-44b0-a577-3fa2d4e8d821": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "afc8ce26-3e7a-45bd-b68c-960ec7a3c7eb": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "68ada150-cb82-46b2-bb1c-7dcbd0f40a65": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "e93e3ca9-dc40-4652-b2cb-795621dd7e40": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "de051a74-5ef0-4d12-bb6b-a0bbae72ed24": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "c8c33419-e9d8-4942-8784-5309ce2130ee": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "c7f87b24-bfeb-4ca9-b7f0-3b48637dcd5a": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "8313a1a0-23e7-4e37-b9f8-eb33b09d5dde": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "0cc9d966-8618-4a9e-9392-81d1c9713b58": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "ebc0b1cf-4556-496b-bb20-185bd84be985": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "af853dc6-3034-4772-86b6-13975c4118be": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "9734b2d0-8321-4c47-8df4-765b72b16435": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "65585f71-b96f-48f3-902e-a7055d8fa87e": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "0114f6f0-5c6e-4ff7-b807-9d9790162bc2": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "db0391fb-8f15-49af-a54b-cc6d1f531984": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "f0069969-32ce-4117-93ee-a89574e3f522": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "e783e940-5c31-4331-b57b-6a4badc8e08c": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "a24a28b2-8a82-4125-a182-1cd7e953f1b0": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "25b8d13a-39b8-4c9d-af99-5ef226f8f6ea": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "6393f501-c040-4696-97f1-44673cd827c9": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "38699fd5-284c-4a2d-8e31-d723de6119ca": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "1f58d1b2-f7a6-445c-baab-124de60d5b56": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "d684ed20-736d-487c-94cb-8fe6a5e4a45e": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "b68da4d8-614b-4fc5-b80e-b5ef30b7e558": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "748f7654-2fd9-4140-a1b1-fc15e832bb83": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "acf4539d-34cb-49e2-a6fc-b9d383cca634": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "18492891-e9c2-40e1-8348-a242bf50767d": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "dd1b8c91-d513-4376-a98e-c3cd0732f187": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "1c70d55a-fac0-4a24-a41a-b4d7fc9f9d48": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "65c71aa3-28a6-4eb9-8704-7a0b8768a754": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "a713420b-05b3-49de-9c6f-25d145dc29da": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "1615c594-0be3-4b31-a594-d44f91d8f559": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "fb26b495-b911-46ec-a023-aa015b5d4177": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "65997725-aca6-4411-8751-672ff282f717": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "9138b8cd-e28d-49c3-80a5-5c3ce198f040": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "f5c7fa59-987e-4be0-a593-c287a4b417a5": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "2fd27cfc-9acd-483e-9e0c-2b9356023865": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "c764bc61-e9f0-4468-be37-a7521110c582": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "2bcffa8f-05d5-4ef7-884c-b693f4f33127": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "b0b4e28b-5a15-411e-a269-b30ba878f5fc": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "e16c4aa2-e2a9-473c-8174-2b1f994c013e": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "a2108aac-18b5-4dde-a69d-8c87ca559d76": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "976a4c43-6ed5-4042-8d86-5437568d6309": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "c2ebc21c-97ff-4195-9c8a-2e575866820f": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "cb0af4d3-618a-4c57-85d7-9e590bd57d0d": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "3b19bbaa-87e9-4327-8d60-b9aae3cee632": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "33855bfc-e7b9-4a1d-9925-ee5132b5abdf": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "d39df5b7-532b-4529-ab2f-c08c57528a08": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "9bf96a37-573c-45e2-b13a-e27a9de915cf": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "5ba83182-261d-4a9e-ac84-24a07a57ca34": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "3f425028-6427-4bda-bf19-4959374b9d46": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "57e94b14-009e-4905-900c-f75f4a4609bc": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "e6be5cf8-e74c-4f16-be41-8f2bdd54b220": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "c782279a-1b74-4185-ba9c-b59129cc92d4": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "1c0459b9-d8a9-4ceb-9865-1a2283608178": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "e7d89876-5491-46d6-91c7-760bbcbf264c": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "8f7971d7-c21c-46b8-81c6-4ff9a51d770f": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "758c8e80-578f-4d39-829e-6a79c25789ca": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "83eae050-9e04-4e54-b43c-071c93ca4b71": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "18aa3240-244c-402c-aa08-4b2e239352fa": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "ef33fc70-8936-46c5-af73-7799be3bb89c": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "3ea15039-5b72-4459-bcab-a75d59717388": {
+    "label": "ambiguous",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "e0aae646-4608-497b-9044-44c0061a60da": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "d0063603-7365-4295-b593-9d55e89d47a4": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "53c271dc-37e1-432e-b271-1bbd3f1ba2d4": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "3bc2f8d9-ea91-4b3d-affd-39c86db062ef": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "31a7e093-cedf-4382-9036-afa378fdcc7b": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "23192205-8544-4f05-9325-235106410635": {
+    "label": "legitimate",
+    "split": "dev",
+    "category": "product not as described"
+  },
+  "a70938cd-aa57-46df-bd9b-33d744bceec7": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "duplicate charge"
+  },
+  "c5cbfdd3-acac-4252-8296-490fb6d91b01": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "ab8d853f-d1bc-4338-9013-f59d2c51c711": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "25eb8f93-ba91-4ed9-a1af-370dbc7c411e": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "923666d8-5e77-4fc8-9d78-b84470904c1c": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "subscription not cancelled"
+  },
+  "bd8e3449-e73d-4150-b950-1e177626e877": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "product not received"
+  },
+  "907c07de-ead1-49ef-a1e9-120d440f4851": {
+    "label": "fraudulent",
+    "split": "dev",
+    "category": "unauthorized transaction"
+  },
+  "3422db2c-3581-4c2b-b0de-2522bfc749d2": {
+    "label": "legitimate",
+    "split": "test",
+    "category": "duplicate charge"
+  },
+  "a93f674b-40b4-40ae-aad6-d6d6bd30bafe": {
+    "label": "fraudulent",
+    "split": "test",
+    "category": "subscription not cancelled"
+  },
+  "ed0671bf-ed96-4f0b-b30e-736d7f102f9c": {
+    "label": "ambiguous",
+    "split": "test",
+    "category": "unauthorized transaction"
+  },
+  "6ab32601-495a-4527-a744-b292c1d827b0": {
+    "label": "legitimate",
+    "split": "test",
+    "category": "product not received"
+  },
+  "04923fd7-d79b-42fc-b08d-8a442e8092a7": {
+    "label": "fraudulent",
+    "split": "test",
+    "category": "product not received"
+  },
+  "eb92c465-4208-4f76-a596-accf80df87d2": {
+    "label": "ambiguous",
+    "split": "test",
+    "category": "duplicate charge"
+  },
+  "9313553c-1e27-44b7-9b68-a297d4613e1e": {
+    "label": "ambiguous",
+    "split": "test",
+    "category": "product not as described"
+  },
+  "0131821c-3b83-48c7-95bd-d0dc97c8a505": {
+    "label": "legitimate",
+    "split": "test",
+    "category": "product not as described"
+  },
+  "2ec9bc83-cfca-4cc9-8afe-e306230e4a9c": {
+    "label": "ambiguous",
+    "split": "test",
+    "category": "duplicate charge"
+  },
+  "7152f6c5-c59d-4467-b8fc-8bb84f27353f": {
+    "label": "ambiguous",
+    "split": "test",
+    "category": "unauthorized transaction"
+  },
+  "82598709-c352-44b8-8c99-4a91585cd3ac": {
+    "label": "legitimate",
+    "split": "test",
+    "category": "unauthorized transaction"
+  },
+  "200da7ab-7839-4f40-97a3-e72d2b9f8049": {
+    "label": "legitimate",
+    "split": "test",
+    "category": "subscription not cancelled"
+  },
+  "e1e8d722-3ee6-4b5a-8c78-a4015e157b7d": {
+    "label": "fraudulent",
+    "split": "test",
+    "category": "unauthorized transaction"
+  },
+  "69844a9c-330e-4d9b-af7c-2c57f7ddb4d0": {
+    "label": "ambiguous",
+    "split": "test",
+    "category": "unauthorized transaction"
+  },
+  "01686678-f752-4fc5-a2fd-248382436925": {
+    "label": "legitimate",
+    "split": "test",
+    "category": "unauthorized transaction"
+  },
+  "25af6e02-b726-4b81-b466-0b2b17687991": {
+    "label": "ambiguous",
+    "split": "test",
+    "category": "subscription not cancelled"
+  },
+  "56b57dde-e971-4a6d-aff3-028c410ca512": {
+    "label": "ambiguous",
+    "split": "test",
+    "category": "product not received"
+  },
+  "b27047aa-c761-4dc7-9647-0e165ae36c28": {
+    "label": "fraudulent",
+    "split": "test",
+    "category": "product not as described"
+  },
+  "634e4a30-b584-4c9c-9012-7dab6ba6c88f": {
+    "label": "legitimate",
+    "split": "test",
+    "category": "duplicate charge"
+  },
+  "a5846661-5e54-4863-99a5-ae84f80f9f2d": {
+    "label": "fraudulent",
+    "split": "test",
+    "category": "product not received"
+  },
+  "6169a808-046f-4f9b-bedf-0f0fffadef7f": {
+    "label": "fraudulent",
+    "split": "test",
+    "category": "product not as described"
+  },
+  "9560b0a8-e38e-4bf1-841c-a5751d37c167": {
+    "label": "legitimate",
+    "split": "test",
+    "category": "unauthorized transaction"
+  },
+  "a0454316-ef09-4362-94e5-fa2fce67e645": {
+    "label": "ambiguous",
+    "split": "test",
+    "category": "product not received"
+  },
+  "e5ba8321-8bd3-44db-ae36-d12a4e72e269": {
+    "label": "legitimate",
+    "split": "test",
+    "category": "product not received"
+  },
+  "daebaf83-1232-4df6-869a-45798b491171": {
+    "label": "fraudulent",
+    "split": "test",
+    "category": "product not as described"
+  },
+  "5a160013-ac55-4d98-b6a9-e79761921fd9": {
+    "label": "legitimate",
+    "split": "test",
+    "category": "duplicate charge"
+  },
+  "818e8225-2f84-4a9a-b929-f4ebe2a505e3": {
+    "label": "fraudulent",
+    "split": "test",
+    "category": "product not as described"
+  },
+  "73174668-d110-4ff2-ad20-3e388e52e198": {
+    "label": "ambiguous",
+    "split": "test",
+    "category": "duplicate charge"
+  },
+  "e379f3ea-9a3b-48c0-9137-36a505072213": {
+    "label": "ambiguous",
+    "split": "test",
+    "category": "duplicate charge"
+  },
+  "f5270fbd-dcc4-4bde-ba80-b2e720ad2d1a": {
+    "label": "fraudulent",
+    "split": "test",
+    "category": "duplicate charge"
+  }
+}
