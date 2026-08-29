@@ -1,31 +1,52 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+import logging
 from typing import List
 from uuid import UUID
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.db.models import AuditLog, Case
 from app.db.session import get_db
-from app.db.models import Case
-from app.schemas import CaseCreate, CaseResponse, CaseDetailResponse
+from app.orchestrator import run_pipeline
+from app.schemas import AuditLogResponse, CaseCreate, CaseDetailResponse, CaseResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/cases", tags=["cases"])
 
-@router.post("/", response_model=CaseResponse)
-def create_case(case_in: CaseCreate, db: Session = Depends(get_db)):
+
+@router.post("/", response_model=CaseResponse, status_code=201)
+def create_case(
+    case_in: CaseCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """
+    Submit a new dispute.  The case row is created immediately (status='new')
+    and returned so the caller has the ID.  The full pipeline runs in the
+    background so the HTTP response is not held open during LLM calls.
+    """
     db_case = Case(
         transaction_id=case_in.transaction_id,
         dispute_reason=case_in.dispute_reason,
         customer_claim=case_in.customer_claim,
         merchant_id=case_in.merchant_id,
         amount=case_in.amount,
-        status="new"
+        status="new",
     )
     db.add(db_case)
     db.commit()
     db.refresh(db_case)
+
+    background_tasks.add_task(run_pipeline, db_case.id, db)
+
     return db_case
+
 
 @router.get("/", response_model=List[CaseResponse])
 def get_cases(db: Session = Depends(get_db)):
-    return db.query(Case).all()
+    return db.query(Case).order_by(Case.created_at.desc()).all()
+
 
 @router.get("/{id}", response_model=CaseDetailResponse)
 def get_case(id: UUID, db: Session = Depends(get_db)):
@@ -33,3 +54,18 @@ def get_case(id: UUID, db: Session = Depends(get_db)):
     if not db_case:
         raise HTTPException(status_code=404, detail="Case not found")
     return db_case
+
+
+@router.get("/{id}/audit", response_model=List[AuditLogResponse])
+def get_audit(id: UUID, db: Session = Depends(get_db)):
+    """Return the full, immutable audit trail for a case in chronological order."""
+    # Verify the case exists first
+    if not db.query(Case).filter(Case.id == id).first():
+        raise HTTPException(status_code=404, detail="Case not found")
+
+    return (
+        db.query(AuditLog)
+        .filter(AuditLog.case_id == id)
+        .order_by(AuditLog.timestamp)
+        .all()
+    )

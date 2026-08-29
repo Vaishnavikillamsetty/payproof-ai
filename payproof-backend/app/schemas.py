@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, UUID4
-from typing import List, Optional
+from typing import Any, List, Optional
 from datetime import datetime
+
 
 class CaseCreate(BaseModel):
     transaction_id: str
@@ -8,6 +9,7 @@ class CaseCreate(BaseModel):
     customer_claim: str
     merchant_id: str
     amount: float
+
 
 class CaseResponse(BaseModel):
     id: UUID4
@@ -24,6 +26,7 @@ class CaseResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class EvidenceResponse(BaseModel):
     id: UUID4
     case_id: UUID4
@@ -34,6 +37,7 @@ class EvidenceResponse(BaseModel):
     collected_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class ClaimResponse(BaseModel):
     id: UUID4
@@ -46,6 +50,7 @@ class ClaimResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class RuleFlagResponse(BaseModel):
     id: UUID4
     case_id: UUID4
@@ -55,7 +60,18 @@ class RuleFlagResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class CaseDetailResponse(CaseResponse):
     evidence: List[EvidenceResponse] = []
     claims: List[ClaimResponse] = []
     rule_flags: List[RuleFlagResponse] = []
+
+
+class AuditLogResponse(BaseModel):
+    id: UUID4
+    case_id: UUID4
+    step: str
+    detail: Optional[Any]
+    timestamp: datetime
+
+    model_config = ConfigDict(from_attributes=True)
