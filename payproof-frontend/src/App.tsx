@@ -1,32 +1,35 @@
 import { useState } from 'react'
 import NavBar from './components/NavBar'
 import Dashboard from './pages/Dashboard'
+import CaseDetail from './pages/CaseDetail'
+import NewCase from './pages/NewCase'
+
+type ViewState = 
+  | { type: 'dashboard' }
+  | { type: 'case_detail', id: string }
+  | { type: 'new_case' }
 
 /**
  * App shell — minimal routing without a router library.
- * Phase 4 has one page: Dashboard.
- * Phase 5 will add CaseDetail; we'll add a `view` state for that.
  */
 export default function App() {
-  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null)
+  const [view, setView] = useState<ViewState>({ type: 'dashboard' })
 
-  // Phase 5 hook — selecting a case will navigate to detail view
-  const handleSelectCase = (id: string) => {
-    setSelectedCaseId(id)
-    // TODO Phase 5: render <CaseDetail id={id} />
-    console.log('Selected case:', id)
+  let navButtonText = '+ New Case'
+  let navButtonAction = () => setView({ type: 'new_case' })
+  
+  if (view.type !== 'dashboard') {
+    navButtonText = 'Dashboard'
+    navButtonAction = () => setView({ type: 'dashboard' })
   }
-
-  // Suppress unused-var lint for now (used in Phase 5)
-  void selectedCaseId
 
   return (
     <div style={{ minHeight: '100svh', background: 'var(--color-ink)' }}>
       <NavBar>
-        {/* New Case button placeholder — wired up in Phase 5 */}
         <button
           type="button"
           id="btn-new-case"
+          onClick={navButtonAction}
           style={{
             padding: '7px 16px',
             borderRadius: 5,
@@ -50,11 +53,22 @@ export default function App() {
               'rgba(63, 167, 150, 0.12)')
           }
         >
-          + New Case
+          {navButtonText}
         </button>
       </NavBar>
 
-      <Dashboard onSelectCase={handleSelectCase} />
+      {view.type === 'dashboard' && (
+        <Dashboard onSelectCase={(id) => setView({ type: 'case_detail', id })} />
+      )}
+      {view.type === 'case_detail' && (
+        <CaseDetail caseId={view.id} onBack={() => setView({ type: 'dashboard' })} />
+      )}
+      {view.type === 'new_case' && (
+        <NewCase 
+          onCancel={() => setView({ type: 'dashboard' })} 
+          onSuccess={(id) => setView({ type: 'case_detail', id })}
+        />
+      )}
     </div>
   )
 }

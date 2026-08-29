@@ -1,7 +1,8 @@
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import type { Case } from '../types'
 import { formatAmount, formatDate, formatDisputeReason, shortTxn, statusTheme } from '../utils'
 import CompletenessBar from './CompletenessBar'
+import VerdictStamp from './VerdictStamp'
 
 interface Props {
   case_: Case
@@ -18,6 +19,7 @@ interface Props {
  * Respects prefers-reduced-motion.
  */
 export default function CaseCard({ case_: c, index, onSelect }: Props) {
+  const shouldReduceMotion = useReducedMotion()
   const theme = statusTheme(c.status)
 
   const confidence =
@@ -27,11 +29,11 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+      animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
       transition={{
         duration: 0.25,
-        delay: index * 0.06, // ~60ms stagger per card
+        delay: shouldReduceMotion ? 0 : index * 0.06, // ~60ms stagger per card
         ease: 'easeOut',
       }}
       style={{ cursor: 'pointer' }}
@@ -146,20 +148,8 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
 
         {/* ── Col 3: Status badge + timestamp ────────────────────────── */}
         <div style={{ textAlign: 'right' }}>
-          <div style={{ marginBottom: 8 }}>
-            <span className={`badge ${theme.badgeClass}`}>
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: theme.dot,
-                  display: 'inline-block',
-                  flexShrink: 0,
-                }}
-              />
-              {theme.label}
-            </span>
+          <div style={{ marginBottom: 12 }}>
+            <VerdictStamp status={c.status} confidence={c.overall_confidence} size="small" />
           </div>
           <div
             className="font-mono text-slate"
