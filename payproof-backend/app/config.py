@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     database_url: str = "postgresql://postgres:postgres@localhost:5432/payproof"
     anthropic_api_key: str = ""
-    mock_verifier: bool = False
+    mock_verifier: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",
