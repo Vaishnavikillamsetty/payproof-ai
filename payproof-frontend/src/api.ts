@@ -1,4 +1,4 @@
-import type { Case, CaseDetail, AuditEntry } from './types'
+import type { Case, CaseDetail, AuditEntry, EvalMetrics } from './types'
 
 const BASE = '/api'
 
@@ -23,6 +23,9 @@ export const api = {
 
   getAudit: (id: string): Promise<AuditEntry[]> =>
     request(`/cases/${id}/audit`),
+
+  getMetrics: (): Promise<EvalMetrics> =>
+    request('/metrics/'),
 
   createCase: (body: {
     transaction_id: string

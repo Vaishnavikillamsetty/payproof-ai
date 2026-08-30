@@ -2,13 +2,14 @@ import type { ReactNode } from 'react'
 
 interface Props {
   children: ReactNode
+  onNavMetrics?: () => void
 }
 
 /**
  * Top navigation bar — fixed, always visible.
  * IBM Plex Mono for the wordmark; Inter for sub-label.
  */
-export default function NavBar({ children }: Props) {
+export default function NavBar({ children, onNavMetrics }: Props) {
   return (
     <nav
       style={{
@@ -53,7 +54,26 @@ export default function NavBar({ children }: Props) {
         </div>
 
         {/* Slot for right-side content */}
-        <div>{children}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {onNavMetrics && (
+            <button
+              onClick={onNavMetrics}
+              className="font-mono text-slate hover:text-white transition-colors"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 12,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                fontWeight: 600,
+              }}
+            >
+              Metrics
+            </button>
+          )}
+          {children}
+        </div>
       </div>
     </nav>
   )

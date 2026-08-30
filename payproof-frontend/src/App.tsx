@@ -3,11 +3,13 @@ import NavBar from './components/NavBar'
 import Dashboard from './pages/Dashboard'
 import CaseDetail from './pages/CaseDetail'
 import NewCase from './pages/NewCase'
+import Metrics from './pages/Metrics'
 
 type ViewState = 
   | { type: 'dashboard' }
   | { type: 'case_detail', id: string }
   | { type: 'new_case' }
+  | { type: 'metrics' }
 
 /**
  * App shell — minimal routing without a router library.
@@ -25,7 +27,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100svh', background: 'var(--color-ink)' }}>
-      <NavBar>
+      <NavBar onNavMetrics={() => setView({ type: 'metrics' })}>
         <button
           type="button"
           id="btn-new-case"
@@ -68,6 +70,9 @@ export default function App() {
           onCancel={() => setView({ type: 'dashboard' })} 
           onSuccess={(id) => setView({ type: 'case_detail', id })}
         />
+      )}
+      {view.type === 'metrics' && (
+        <Metrics />
       )}
     </div>
   )

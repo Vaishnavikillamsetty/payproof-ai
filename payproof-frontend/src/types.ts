@@ -63,3 +63,24 @@ export interface AuditEntry {
   detail: Record<string, unknown> | null
   timestamp: string
 }
+
+
+export interface EvalMetrics {
+  confusion_matrix: {
+    true_positives: number
+    false_positives: number
+    true_negatives: number
+    false_negatives: number
+    total: number
+  }
+  rates: {
+    precision: number
+    recall: number
+  }
+  business_impact: {
+    wasted_reviews: number
+    cost_statement: string
+    unsafe_resolves: number
+    unsafe_statement: string
+  }
+}
