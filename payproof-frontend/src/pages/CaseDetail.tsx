@@ -124,15 +124,33 @@ export default function CaseDetail({ caseId, onBack }: Props) {
         <section>
           <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <VerdictStamp status={c.status} confidence={c.overall_confidence} size="large" />
+            
+            {/* Legend / Type System */}
+            <div style={{ display: 'flex', gap: 16, background: 'var(--color-ink-light)', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--color-ink-border)' }}>
+              <span className="font-body text-slate" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>🗣️ Claim</span>
+              <span className="font-body text-slate" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>📄 Evidence</span>
+              <span className="font-body text-slate" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>⚙️ Rule</span>
+            </div>
           </div>
+
+          {c.status === 'human_review' && (
+            <div style={{ background: 'rgba(224, 163, 57, 0.1)', borderLeft: '4px solid var(--color-amber)', padding: '20px 24px', marginBottom: 40, borderRadius: '0 6px 6px 0' }}>
+              <h3 className="font-mono" style={{ color: 'var(--color-amber)', fontSize: 14, textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                ⚠️ Human Review Required
+              </h3>
+              <p className="font-body text-white" style={{ fontSize: 15, margin: 0, lineHeight: 1.5 }}>
+                {routingReason || 'The system flagged this case for manual review.'}
+              </p>
+            </div>
+          )}
 
           <div className="card" style={{ padding: '24px 28px', marginBottom: 40 }}>
              <h3 className="font-mono text-slate" style={{ fontSize: 12, textTransform: 'uppercase', marginBottom: 16 }}>
                 Completeness Score
              </h3>
-             <CompletenessBar score={c.completeness_score} showLabel={true} />
+             <CompletenessBar score={c.completeness_score} showLabel={true} evidence={c.evidence} />
              
-             {routingReason ? (
+             {routingReason && c.status !== 'human_review' ? (
                <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px solid var(--color-ink-border)' }}>
                  <h3 className="font-mono text-slate" style={{ fontSize: 12, textTransform: 'uppercase', marginBottom: 12 }}>
                     Policy Gate Decision
@@ -141,13 +159,13 @@ export default function CaseDetail({ caseId, onBack }: Props) {
                    {routingReason}
                  </p>
                </div>
-             ) : (
+             ) : (!routingReason && (
                <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px solid var(--color-ink-border)' }}>
                  <p className="font-body text-slate" style={{ fontSize: 14, fontStyle: 'italic' }}>
                    Policy decision is pending processing.
                  </p>
                </div>
-             )}
+             ))}
           </div>
 
           <h2 className="font-mono text-slate" style={{ fontSize: 14, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 20 }}>

@@ -63,6 +63,19 @@ export default function Metrics() {
         </p>
       </div>
 
+      {/* Explanation Block */}
+      <div style={{ background: 'var(--color-ink-light)', padding: '20px 24px', borderRadius: 6, marginBottom: 40, border: '1px solid var(--color-ink-border)' }}>
+        <h2 className="font-mono text-slate" style={{ fontSize: 12, textTransform: 'uppercase', marginBottom: 16 }}>Metric Definitions</h2>
+        <ul className="font-body text-slate-light" style={{ fontSize: 14, lineHeight: 1.6, paddingLeft: 20, margin: '0 0 16px 0' }}>
+          <li><strong style={{ color: 'var(--color-teal)' }}>True Positive (Correct):</strong> An ambiguous case correctly routed to human review.</li>
+          <li><strong style={{ color: 'var(--color-amber)' }}>False Positive (Cost):</strong> A clear case unnecessarily routed to human review (wasted manual effort).</li>
+          <li><strong style={{ color: 'var(--color-red)' }}>Unsafe Resolve (Failure):</strong> An ambiguous case dangerously auto-resolved (our worst failure type).</li>
+        </ul>
+        <p className="font-body text-white" style={{ fontSize: 14, fontStyle: 'italic', margin: 0, padding: '16px 0 0 0', borderTop: '1px solid var(--color-ink-border)' }}>
+          This system prioritizes safety over automation efficiency — {cm.false_negatives} unsafe resolves, with {cm.false_positives} unnecessary human reviews as the current tradeoff. Policy tuning is the next optimization target.
+        </p>
+      </div>
+
       {/* Top Section: Precision / Recall */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 40 }}>
         <div className="card" style={{ padding: 32, textAlign: 'center' }}>
@@ -144,6 +157,13 @@ export default function Metrics() {
             increasing unsafe auto-resolves.
           </p>
         </div>
+      </div>
+      
+      {/* Benchmark Note */}
+      <div style={{ marginTop: 24, textAlign: 'center' }}>
+        <p className="font-body text-slate-light" style={{ fontSize: 12 }}>
+          * Benchmark metrics — computed from a fixed 30-case evaluation set, separate from live cases you submit here.
+        </p>
       </div>
     </main>
   )

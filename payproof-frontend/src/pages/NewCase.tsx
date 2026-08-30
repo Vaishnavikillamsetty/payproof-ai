@@ -143,6 +143,12 @@ export default function NewCase({ onCancel, onSuccess }: Props) {
           />
         </div>
 
+        <div style={{ marginTop: 8, padding: '16px 20px', background: 'var(--color-ink-light)', borderRadius: 6, borderLeft: '4px solid var(--color-teal)' }}>
+          <p className="font-body text-slate-light" style={{ fontSize: 13, margin: 0, lineHeight: 1.5 }}>
+            Case submission starts the investigation. Evidence (payment records, OTP, delivery confirmation, merchant communication) is then retrieved and verified — the system does not just trust the claim as written.
+          </p>
+        </div>
+
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, marginTop: 16 }}>
           <button 
             type="button" 
