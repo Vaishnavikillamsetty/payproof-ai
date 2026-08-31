@@ -69,3 +69,44 @@ class AuditLog(Base):
     step = Column(String, nullable=False)
     detail = Column(JSONB, nullable=True)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+# --------------------------------------------------------------------------- #
+# Seed Tables (Mock External Systems)
+# --------------------------------------------------------------------------- #
+
+class PaymentGatewayRecord(Base):
+    __tablename__ = "ext_payment_gateway"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    transaction_id = Column(String, index=True, nullable=False)
+    amount = Column(Numeric, nullable=False)
+    currency = Column(String, nullable=False)
+    status = Column(String, nullable=False)
+    timestamp = Column(DateTime(timezone=True), nullable=True)
+
+class DeliveryRecord(Base):
+    __tablename__ = "ext_delivery"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    transaction_id = Column(String, index=True, nullable=False)
+    tracking_number = Column(String, nullable=False)
+    status = Column(String, nullable=False)
+    signed_by = Column(String, nullable=True)
+    address_match = Column(Boolean, nullable=True)
+    notes = Column(String, nullable=True)
+    timestamp = Column(DateTime(timezone=True), nullable=True)
+
+class OtpLog(Base):
+    __tablename__ = "ext_otp_log"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    transaction_id = Column(String, index=True, nullable=False)
+    verified = Column(Boolean, nullable=False)
+    ip_address = Column(String, nullable=True)
+    timestamp = Column(DateTime(timezone=True), nullable=True)
+
+class CommunicationLog(Base):
+    __tablename__ = "ext_communication_log"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    transaction_id = Column(String, index=True, nullable=False)
+    channel = Column(String, nullable=False)
+    message = Column(String, nullable=False)
+    has_attachments = Column(Boolean, default=False)
+    timestamp = Column(DateTime(timezone=True), nullable=True)

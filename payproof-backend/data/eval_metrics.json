@@ -1,18 +1,18 @@
 {
   "confusion_matrix": {
     "true_positives": 11,
-    "false_positives": 19,
-    "true_negatives": 0,
+    "false_positives": 15,
+    "true_negatives": 4,
     "false_negatives": 0,
     "total": 30
   },
   "rates": {
-    "precision": 0.3667,
+    "precision": 0.4231,
     "recall": 1.0
   },
   "business_impact": {
-    "wasted_reviews": 19,
-    "cost_statement": "19 clear disputes would have been unnecessarily auto-flagged for human review, costing $95.00 in wasted manual review time (assuming $5.00 per review).",
+    "wasted_reviews": 15,
+    "cost_statement": "15 clear disputes would have been unnecessarily auto-flagged for human review, costing $75.00 in wasted manual review time (assuming $5.00 per review).",
     "unsafe_resolves": 0,
     "unsafe_statement": "0 ambiguous cases were improperly auto-resolved. System maintained strict boundaries."
   },
@@ -26,8 +26,8 @@
     {
       "case_id": "a93f674b-40b4-40ae-aad6-d6d6bd30bafe",
       "label": "fraudulent",
-      "status": "weak_case",
-      "result_type": "FP (Unnecessarily Flagged for Review)"
+      "status": "strong_case",
+      "result_type": "TN (Correctly Auto-Resolved)"
     },
     {
       "case_id": "ed0671bf-ed96-4f0b-b30e-736d7f102f9c",
@@ -44,19 +44,19 @@
     {
       "case_id": "04923fd7-d79b-42fc-b08d-8a442e8092a7",
       "label": "fraudulent",
-      "status": "human_review",
+      "status": "weak_case",
       "result_type": "FP (Unnecessarily Flagged for Review)"
     },
     {
       "case_id": "eb92c465-4208-4f76-a596-accf80df87d2",
       "label": "ambiguous",
-      "status": "human_review",
+      "status": "weak_case",
       "result_type": "TP (Correctly Flagged for Review)"
     },
     {
       "case_id": "9313553c-1e27-44b7-9b68-a297d4613e1e",
       "label": "ambiguous",
-      "status": "human_review",
+      "status": "weak_case",
       "result_type": "TP (Correctly Flagged for Review)"
     },
     {
@@ -68,7 +68,7 @@
     {
       "case_id": "2ec9bc83-cfca-4cc9-8afe-e306230e4a9c",
       "label": "ambiguous",
-      "status": "human_review",
+      "status": "weak_case",
       "result_type": "TP (Correctly Flagged for Review)"
     },
     {
@@ -86,14 +86,14 @@
     {
       "case_id": "200da7ab-7839-4f40-97a3-e72d2b9f8049",
       "label": "legitimate",
-      "status": "weak_case",
-      "result_type": "FP (Unnecessarily Flagged for Review)"
+      "status": "strong_case",
+      "result_type": "TN (Correctly Auto-Resolved)"
     },
     {
       "case_id": "e1e8d722-3ee6-4b5a-8c78-a4015e157b7d",
       "label": "fraudulent",
-      "status": "weak_case",
-      "result_type": "FP (Unnecessarily Flagged for Review)"
+      "status": "strong_case",
+      "result_type": "TN (Correctly Auto-Resolved)"
     },
     {
       "case_id": "69844a9c-330e-4d9b-af7c-2c57f7ddb4d0",
@@ -134,8 +134,8 @@
     {
       "case_id": "a5846661-5e54-4863-99a5-ae84f80f9f2d",
       "label": "fraudulent",
-      "status": "weak_case",
-      "result_type": "FP (Unnecessarily Flagged for Review)"
+      "status": "strong_case",
+      "result_type": "TN (Correctly Auto-Resolved)"
     },
     {
       "case_id": "6169a808-046f-4f9b-bedf-0f0fffadef7f",
@@ -182,19 +182,19 @@
     {
       "case_id": "73174668-d110-4ff2-ad20-3e388e52e198",
       "label": "ambiguous",
-      "status": "human_review",
+      "status": "weak_case",
       "result_type": "TP (Correctly Flagged for Review)"
     },
     {
       "case_id": "e379f3ea-9a3b-48c0-9137-36a505072213",
       "label": "ambiguous",
-      "status": "human_review",
+      "status": "weak_case",
       "result_type": "TP (Correctly Flagged for Review)"
     },
     {
       "case_id": "f5270fbd-dcc4-4bde-ba80-b2e720ad2d1a",
       "label": "fraudulent",
-      "status": "human_review",
+      "status": "weak_case",
       "result_type": "FP (Unnecessarily Flagged for Review)"
     }
   ]

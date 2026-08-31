@@ -10,11 +10,31 @@ interface Props {
  * Vertical evidence timeline.
  * Animates in staggered on load. Cards use paper color.
  */
+function isDemo(e: Evidence): boolean {
+  const note = e.content?.note as string | undefined
+  return typeof note === 'string' && note.startsWith('[DEMO]')
+}
+
 export default function EvidenceTimeline({ evidenceList }: Props) {
   const shouldReduceMotion = useReducedMotion()
+  const hasDemo = evidenceList.some(isDemo)
 
   return (
-    <div style={{ position: 'relative', paddingLeft: 24 }}>
+    <div>
+      {hasDemo && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          background: 'rgba(91, 107, 124, 0.15)',
+          border: '1px solid var(--color-ink-border)',
+          borderRadius: 4, padding: '8px 12px', marginBottom: 20,
+        }}>
+          <span style={{ fontSize: 14 }}>⚗️</span>
+          <span className="font-body text-slate" style={{ fontSize: 12, lineHeight: 1.4 }}>
+            <strong>Evidence retrieved from seeded demo records simulating payment gateway, courier, OTP, and merchant communication systems.</strong>
+          </span>
+        </div>
+      )}
+      <div style={{ position: 'relative', paddingLeft: 24 }}>
       {/* Vertical line */}
       <div
         style={{
@@ -62,10 +82,17 @@ export default function EvidenceTimeline({ evidenceList }: Props) {
                 boxShadow: 'var(--shadow)',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: 8 }}>
-                <span className="font-mono" style={{ fontWeight: 600, fontSize: 13, textTransform: 'uppercase' }}>
-                  {e.evidence_type} Evidence
-                </span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: 8 }}>
+                <div>
+                  <span className="font-mono" style={{ fontWeight: 600, fontSize: 13, textTransform: 'uppercase' }}>
+                    📄 {e.evidence_type} Evidence
+                  </span>
+                  {isDemo(e) && (
+                    <span className="font-mono" style={{ fontSize: 10, color: 'rgba(0,0,0,0.4)', display: 'block', marginTop: 2 }}>
+                      [DEMO — simulated]
+                    </span>
+                  )}
+                </div>
                 {hasTimestamp && (
                   <span className="font-mono" style={{ fontSize: 11, color: 'rgba(0,0,0,0.5)' }}>
                     {formatDate(e.event_timestamp!)}
@@ -81,7 +108,10 @@ export default function EvidenceTimeline({ evidenceList }: Props) {
                   color: 'rgba(0,0,0,0.7)',
                 }}
               >
-                {JSON.stringify(e.content, null, 2)}
+                {JSON.stringify(
+                  Object.fromEntries(Object.entries(e.content).filter(([k]) => k !== 'note')),
+                  null, 2
+                )}
               </pre>
               {e.source_id && (
                 <div className="font-mono" style={{ fontSize: 10, marginTop: 8, color: 'rgba(0,0,0,0.4)' }}>
@@ -92,9 +122,10 @@ export default function EvidenceTimeline({ evidenceList }: Props) {
           </motion.div>
         )
       })}
-      {evidenceList.length === 0 && (
-         <div className="font-body text-slate" style={{ fontStyle: 'italic' }}>No evidence recorded.</div>
-      )}
+        {evidenceList.length === 0 && (
+           <div className="font-body text-slate" style={{ fontStyle: 'italic' }}>No evidence recorded.</div>
+        )}
+      </div>
     </div>
   )
 }

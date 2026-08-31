@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, UUID4
+from pydantic import BaseModel, ConfigDict, UUID4, field_validator, model_validator
 from typing import Any, List, Optional
 from datetime import datetime
 
@@ -23,8 +23,19 @@ class CaseResponse(BaseModel):
     overall_confidence: Optional[float] = None
     created_at: datetime
     updated_at: datetime
+    # Derived from the evidence relationship — allows Dashboard to show
+    # category availability without a separate evidence fetch (no N+1).
+    evidence_types: List[str] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode='before')
+    @classmethod
+    def populate_evidence_types(cls, data):
+        # Works when ORM object is passed (from_attributes=True path)
+        if hasattr(data, 'evidence'):
+            data.__dict__.setdefault('evidence_types', [e.evidence_type for e in (data.evidence or [])])
+        return data
 
 
 class EvidenceResponse(BaseModel):

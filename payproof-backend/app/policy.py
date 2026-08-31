@@ -40,9 +40,14 @@ def completeness_score(evidence_list) -> tuple[int, list[str]]:
 # --------------------------------------------------------------------------- #
 # Section 6.4 — Policy Gate                                                   #
 # --------------------------------------------------------------------------- #
-COMPLETENESS_THRESHOLD = 70   # tunable against dev set
+# Calibration note: the synthetic dataset attaches at most 2 evidence categories
+# per case (payment=30pts + one category-specific record=20-30pts), making the
+# maximum possible score 50-60.  A threshold of 70 was unreachable and caused
+# 100% human_review routing.  50 lets cases with clear 2-category evidence
+# auto-resolve when LLM confidence is also high.
+COMPLETENESS_THRESHOLD = 50   # tunable against dev set
 CONFIDENCE_THRESHOLD = 0.75   # tunable against dev set
-MIN_COMPLETENESS = 40          # below this, always human review
+MIN_COMPLETENESS = 30          # below this, always human review (payment-only cases)
 
 
 def policy_decision(

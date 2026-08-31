@@ -129,7 +129,19 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
               Confidence
             </span>
           </div>
-          <CompletenessBar score={c.completeness_score} />
+          <CompletenessBar
+            score={c.completeness_score}
+            showLabel={true}
+            evidence={(c.evidence_types ?? []).map((t, i) => ({
+              id: `${c.id}-ev-${i}`,
+              case_id: c.id,
+              evidence_type: t,
+              source_id: null,
+              content: {},
+              event_timestamp: null,
+              collected_at: c.created_at,
+            }))}
+          />
           <div
             style={{
               marginTop: 6,

@@ -5,10 +5,11 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.db.models import AuditLog, Case
+from app.db.models import AuditLog, Case, Evidence
 from app.db.session import get_db
 from app.orchestrator import run_pipeline
 from app.schemas import AuditLogResponse, CaseCreate, CaseDetailResponse, CaseResponse
+from sqlalchemy.orm import joinedload
 
 logger = logging.getLogger(__name__)
 
@@ -38,14 +39,19 @@ def create_case(
     db.commit()
     db.refresh(db_case)
 
-    background_tasks.add_task(run_pipeline, db_case.id, db)
+    background_tasks.add_task(run_pipeline, db_case.id)
 
     return db_case
 
 
 @router.get("/", response_model=List[CaseResponse])
 def get_cases(db: Session = Depends(get_db)):
-    return db.query(Case).order_by(Case.created_at.desc()).all()
+    return (
+        db.query(Case)
+        .options(joinedload(Case.evidence))
+        .order_by(Case.created_at.desc())
+        .all()
+    )
 
 
 @router.get("/{id}", response_model=CaseDetailResponse)

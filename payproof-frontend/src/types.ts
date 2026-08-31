@@ -20,6 +20,8 @@ export interface Case {
   overall_confidence: number | null
   created_at: string
   updated_at: string
+  /** Evidence type names for the case — populated by the list endpoint */
+  evidence_types: string[]
 }
 
 export interface Evidence {
