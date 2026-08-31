@@ -1,14 +1,14 @@
-import sys
-import os
 import json
 import logging
+import os
+import sys
 from uuid import UUID
 
 # Ensure the app module can be imported
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from app.db.models import AuditLog, Case, Claim, RuleFlag
 from app.db.session import SessionLocal
-from app.db.models import Case
 from app.orchestrator import run_pipeline
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -56,7 +56,6 @@ def evaluate():
             
         # Prevent DB pollution by deleting existing derived records for this case.
         # Do NOT delete the Case itself, nor the synthetic Evidence required for testing.
-        from app.db.models import Claim, RuleFlag, AuditLog
         db.query(Claim).filter(Claim.case_id == case_id).delete()
         db.query(RuleFlag).filter(RuleFlag.case_id == case_id).delete()
         db.query(AuditLog).filter(AuditLog.case_id == case_id).delete()

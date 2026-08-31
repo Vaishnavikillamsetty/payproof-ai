@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from '../api'
 
 interface Props {
@@ -15,6 +15,36 @@ export default function NewCase({ onCancel, onSuccess }: Props) {
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  const [isDemoAmount, setIsDemoAmount] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    const checkDemo = async () => {
+      if (!transactionId) {
+        setIsDemoAmount(false)
+        return
+      }
+      try {
+        const info = await api.getDemoInfo(transactionId)
+        if (!active) return
+        if (info.is_demo && info.expected_amount !== undefined) {
+          setIsDemoAmount(true)
+          setAmountStr(info.expected_amount.toFixed(2))
+        } else {
+          setIsDemoAmount(false)
+        }
+      } catch (err) {
+        // ignore errors here, fallback to manual entry
+      }
+    }
+    
+    const timeout = setTimeout(checkDemo, 300)
+    return () => {
+      active = false
+      clearTimeout(timeout)
+    }
+  }, [transactionId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -127,8 +157,14 @@ export default function NewCase({ onCancel, onSuccess }: Props) {
               value={amountStr} 
               onChange={e => setAmountStr(e.target.value)} 
               placeholder="e.g. 49.99"
-              style={inputStyle} 
+              style={{ ...inputStyle, opacity: isDemoAmount ? 0.7 : 1 }}
+              disabled={isDemoAmount}
             />
+            {isDemoAmount && (
+              <div className="font-body text-slate-light" style={{ fontSize: 11, marginTop: 4, color: 'var(--color-teal)' }}>
+                Demo transaction detected — amount loaded from transaction evidence.
+              </div>
+            )}
           </div>
         </div>
 

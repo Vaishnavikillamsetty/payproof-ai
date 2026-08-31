@@ -60,6 +60,8 @@ This prototype's Evidence Collector queries a **seeded database simulating four 
 
 ## Results (held-out evaluation, 30 labeled test cases)
 
+*Note: Transaction amounts and time-of-day timestamps in the 180-case evaluation dataset are sampled directly from the real public Kaggle "Credit Card Fraud Detection" (mlg-ulb/creditcardfraud) dataset for maximum realism. However, the dispute scenarios, evidence structure, and ground-truth labels are synthetically designed for this project.*
+
 | Metric | Value |
 |---|---|
 | Precision | 42.3% |

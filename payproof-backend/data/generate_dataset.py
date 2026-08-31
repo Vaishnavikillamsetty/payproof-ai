@@ -1,14 +1,26 @@
-import sys
+"""
+DATASET GENERATION SCRIPT
+
+Transaction amounts and time-of-day timestamps are sampled from the Kaggle
+"Credit Card Fraud Detection" (mlg-ulb/creditcardfraud) dataset for real-world
+realism. The dispute scenarios, evidence structure, and ground-truth labels are
+synthetically designed specifically for this project.
+"""
+
+import csv
+import json
 import os
+import random
+import sys
+import uuid
+from datetime import datetime, timedelta, timezone
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import uuid
-import random
-import json
-from datetime import datetime, timedelta, timezone
-from sqlalchemy.orm import Session
-from app.db.session import engine, SessionLocal
-from app.db.models import Base, Case, Evidence
+from sqlalchemy.orm import Session  # noqa: E402 (after sys.path manipulation)
+
+from app.db.models import AuditLog, Base, Case, Claim, Evidence, RuleFlag  # noqa: E402
+from app.db.session import SessionLocal, engine  # noqa: E402
 
 # Re-create tables if they don't exist
 Base.metadata.create_all(bind=engine)
@@ -26,7 +38,25 @@ LABELS = ["legitimate", "fraudulent", "ambiguous"]
 def generate_cases(num_cases=180):
     db = SessionLocal()
     
+    # Load amounts and times from Kaggle dataset
+    csv_path = os.path.join(os.path.dirname(__file__), 'creditcard.csv')
+    real_transactions = []
+    try:
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                real_transactions.append((float(row['Time']), float(row['Amount'])))
+        print(f"Loaded {len(real_transactions)} real transactions from Kaggle dataset for sampling.")
+    except Exception as e:
+        print(f"Error loading {csv_path}: {e}")
+        print("Please ensure creditcard.csv is in the data folder.")
+        return
+    
     # Optionally clear existing data for a fresh run
+    # Order matters: child tables must be deleted before their parents
+    db.query(Claim).delete()
+    db.query(RuleFlag).delete()
+    db.query(AuditLog).delete()
     db.query(Evidence).delete()
     db.query(Case).delete()
     db.commit()
@@ -45,8 +75,20 @@ def generate_cases(num_cases=180):
             "category": category
         }
         
-        amount = round(random.uniform(10.0, 500.0), 2)
-        base_date = datetime.now(timezone.utc) - timedelta(days=random.randint(10, 60))
+        sampled_time, sampled_amount = random.choice(real_transactions)
+        
+        # We sample amounts from the Kaggle dataset for realism instead of uniform random.
+        # Note: We enforce a minimum of 1.00 to avoid $0.00 dispute edge cases.
+        amount = max(1.0, round(sampled_amount, 2))
+        
+        # We use the Kaggle dataset's 'Time' (seconds) to get a realistic time-of-day distribution,
+        # but spread the transactions over the last 10-60 days.
+        random_day_offset = random.randint(10, 60)
+        time_of_day_seconds = sampled_time % 86400  # Extract just the time-of-day portion
+        
+        base_date = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0) \
+                    - timedelta(days=random_day_offset) \
+                    + timedelta(seconds=time_of_day_seconds)
         
         # 5% chance of amount mismatch (for rule engine)
         payment_amount = amount

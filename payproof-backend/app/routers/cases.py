@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import AuditLog, Case, Evidence
 from app.db.session import get_db
+from app.agents.external_systems import get_demo_expected_amount
 from app.orchestrator import run_pipeline
 from app.schemas import AuditLogResponse, CaseCreate, CaseDetailResponse, CaseResponse
 from sqlalchemy.orm import joinedload
@@ -23,16 +24,26 @@ def create_case(
     db: Session = Depends(get_db),
 ):
     """
-    Submit a new dispute.  The case row is created immediately (status='new')
-    and returned so the caller has the ID.  The full pipeline runs in the
-    background so the HTTP response is not held open during LLM calls.
+    Submit a new dispute.
     """
+    final_amount = case_in.amount
+
+    # For seeded demo transactions, the backend is authoritative.
+    # Automatically override the user's amount with the exact seeded amount.
+    demo_amount = get_demo_expected_amount(db, case_in.transaction_id)
+    if demo_amount is not None:
+        final_amount = demo_amount
+    else:
+        # For arbitrary/dynamic transactions, the user must provide a valid amount > 0.
+        if final_amount <= 0:
+            raise HTTPException(status_code=400, detail="Amount must be greater than 0.")
+
     db_case = Case(
         transaction_id=case_in.transaction_id,
         dispute_reason=case_in.dispute_reason,
         customer_claim=case_in.customer_claim,
         merchant_id=case_in.merchant_id,
-        amount=case_in.amount,
+        amount=final_amount,
         status="new",
     )
     db.add(db_case)
@@ -42,6 +53,18 @@ def create_case(
     background_tasks.add_task(run_pipeline, db_case.id)
 
     return db_case
+
+
+@router.get("/demo-info/{transaction_id}")
+def get_demo_info(transaction_id: str, db: Session = Depends(get_db)):
+    """
+    Check if a transaction ID corresponds to a seeded demo case,
+    and return its authoritative expected amount.
+    """
+    expected_amount = get_demo_expected_amount(db, transaction_id)
+    if expected_amount is not None:
+        return {"is_demo": True, "expected_amount": expected_amount}
+    return {"is_demo": False}
 
 
 @router.get("/", response_model=List[CaseResponse])

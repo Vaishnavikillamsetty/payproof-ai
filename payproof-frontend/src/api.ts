@@ -26,6 +26,9 @@ export const api = {
 
   getMetrics: (): Promise<EvalMetrics> =>
     request('/metrics/'),
+    
+  getDemoInfo: (transaction_id: string): Promise<{is_demo: boolean, expected_amount?: number}> =>
+    request(`/cases/demo-info/${transaction_id}`),
 
   createCase: (body: {
     transaction_id: string
