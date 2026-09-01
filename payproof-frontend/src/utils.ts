@@ -77,7 +77,8 @@ export function formatAmount(n: number): string {
   }).format(n)
 }
 
-/** Truncate a UUID to "TXN_XXXX…XXXX" shortform. */
+/** Truncate a UUID to "TXN_XXXX…XXXX" shortform, unless it is already short enough. */
 export function shortTxn(txn: string): string {
+  if (txn.length <= 24) return txn.toUpperCase()
   return txn.toUpperCase().slice(0, 16)
 }
