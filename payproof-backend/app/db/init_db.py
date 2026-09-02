@@ -26,11 +26,34 @@ def init_db():
                 conn.execute(text("ALTER TABLE cases ADD COLUMN external_dispute_id VARCHAR"))
                 conn.execute(text("ALTER TABLE cases ADD CONSTRAINT uq_cases_external_dispute_id UNIQUE (external_dispute_id)"))
                 conn.execute(text("CREATE INDEX ix_cases_external_dispute_id ON cases (external_dispute_id)"))
+                
     except Exception as e:
         logger.error(f"Error during schema migration: {e}")
-        # Not throwing to allow startup to attempt continuing if it's a minor error,
-        # but in a real app this would crash startup.
         
+    # 3. Demo Initialization (Hackathon only)
+    from app.config import settings
+    if settings.mock_verifier:
+        logger.info("Demo mode enabled. Checking if demo records need to be seeded.")
+        try:
+            with engine.begin() as conn:
+                result = conn.execute(text("SELECT COUNT(*) FROM ext_payment_gateway"))
+                count = result.scalar()
+            if count == 0:
+                logger.info("Demo tables empty, seeding mock evidence data...")
+                import sys
+                import os
+                sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+                try:
+                    from data.seed_evidence_db import seed_db
+                    seed_db()
+                    logger.info("Demo evidence data seeded successfully.")
+                except ImportError as e:
+                    logger.warning(f"Could not import seed_evidence_db: {e}")
+            else:
+                logger.info(f"Demo tables already contain {count} records, skipping seed.")
+        except Exception as e:
+            logger.warning(f"Could not check/seed demo tables (non-fatal): {e}")
+
     logger.info("Database initialization complete.")
 
 if __name__ == "__main__":

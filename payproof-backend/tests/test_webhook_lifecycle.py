@@ -71,15 +71,44 @@ def test_webhook_out_of_order_lifecycle_before_created(mock_live_provider, db_se
     assert case.status == "won" # Must not downgrade to "new"
 
 def test_webhook_terminal_state_protection(mock_live_provider, db_session):
-    from app.db.models import Case
-    _create_webhook(client, db_session, "payment.dispute.lost", "disp_term", "pay_term")
-    case = db_session.query(Case).filter_by(external_dispute_id="disp_term").first()
-    assert case.status == "lost"
+    from app.db.models import Case, AuditLog
+    _create_webhook(client, db_session, "payment.dispute.won", "disp_t1", "pay_t1")
     
-    # UNDER_REVIEW arrives later
-    _create_webhook(client, db_session, "payment.dispute.under_review", "disp_term", "pay_term")
-    db_session.refresh(case)
-    assert case.status == "lost" # Terminal protected
+    # 1. WON -> LOST is rejected
+    _create_webhook(client, db_session, "payment.dispute.lost", "disp_t1", "pay_t1")
+    case1 = db_session.query(Case).filter_by(external_dispute_id="disp_t1").first()
+    assert case1.status == "won"
+    # Verify audit log
+    audit = db_session.query(AuditLog).filter_by(case_id=case1.id, step="webhook_transition_rejected").first()
+    assert audit is not None
+    assert audit.detail["attempted_status"] == "lost"
+    
+    # 3. WON -> CLOSED is allowed
+    _create_webhook(client, db_session, "payment.dispute.closed", "disp_t1", "pay_t1")
+    db_session.refresh(case1)
+    assert case1.status == "closed"
+    
+    # 5. CLOSED -> UNDER_REVIEW is rejected
+    _create_webhook(client, db_session, "payment.dispute.under_review", "disp_t1", "pay_t1")
+    db_session.refresh(case1)
+    assert case1.status == "closed"
+    
+    # 2. LOST -> WON is rejected
+    _create_webhook(client, db_session, "payment.dispute.lost", "disp_t2", "pay_t2")
+    _create_webhook(client, db_session, "payment.dispute.won", "disp_t2", "pay_t2")
+    case2 = db_session.query(Case).filter_by(external_dispute_id="disp_t2").first()
+    assert case2.status == "lost"
+    
+    # 4. LOST -> CLOSED is allowed
+    _create_webhook(client, db_session, "payment.dispute.closed", "disp_t2", "pay_t2")
+    db_session.refresh(case2)
+    assert case2.status == "closed"
+    
+    # 6. Out-of-order UNDER_REVIEW after WON does not regress the state
+    _create_webhook(client, db_session, "payment.dispute.won", "disp_t3", "pay_t3")
+    _create_webhook(client, db_session, "payment.dispute.under_review", "disp_t3", "pay_t3")
+    case3 = db_session.query(Case).filter_by(external_dispute_id="disp_t3").first()
+    assert case3.status == "won"
 
 def test_webhook_retry_failed_event(mock_live_provider, db_session):
     from app.db.models import WebhookEvent, Case

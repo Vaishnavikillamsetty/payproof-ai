@@ -27,14 +27,30 @@ STATE_PRIORITY = {
     "under_review": 4,
     "won": 5,
     "lost": 5,
-    "closed": 5,
+    "closed": 6,  # Closed is strictly higher than won/lost for lifecycle events
 }
 
 def get_state_priority(status: str) -> int:
     return STATE_PRIORITY.get(status.lower(), -1)
 
 def can_transition(current: str, new: str) -> bool:
-    """Return True if the new state does not regress a terminal or higher-priority state."""
+    """
+    Explicit transition validation.
+    """
+    if current == new:
+        return True
+        
+    # Explicit rejection rules for contradictory terminal states
+    if current == "won" and new == "lost":
+        return False
+    if current == "lost" and new == "won":
+        return False
+        
+    # Rejections for regressing from CLOSED
+    if current == "closed" and new in ["under_review", "action_required", "won", "lost"]:
+        return False
+        
+    # Standard priority check for the rest
     return get_state_priority(new) >= get_state_priority(current)
 
 def process_webhook_background(event_id: UUID, db: Session):
@@ -160,14 +176,27 @@ def process_webhook_background(event_id: UUID, db: Session):
             }
             new_status = status_map.get(event.event_type)
             
-            if new_status and can_transition(case.status, new_status):
-                case.status = new_status
-                
-            db.add(AuditLog(
-                case_id=case.id,
-                step="webhook_lifecycle_update",
-                detail={"event_id": str(event.id), "event_type": event.event_type, "new_status": new_status, "actual_case_status": case.status}
-            ))
+            if new_status:
+                if can_transition(case.status, new_status):
+                    old_status = case.status
+                    case.status = new_status
+                    db.add(AuditLog(
+                        case_id=case.id,
+                        step="webhook_lifecycle_update",
+                        detail={"event_id": str(event.id), "event_type": event.event_type, "new_status": new_status, "actual_case_status": case.status}
+                    ))
+                else:
+                    db.add(AuditLog(
+                        case_id=case.id,
+                        step="webhook_transition_rejected",
+                        detail={
+                            "event_id": str(event.id), 
+                            "event_type": event.event_type, 
+                            "attempted_status": new_status, 
+                            "current_status": case.status,
+                            "reason": "Transition rejected by state priority rules"
+                        }
+                    ))
             
             event.status = "PROCESSED"
             db.commit()
