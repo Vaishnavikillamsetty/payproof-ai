@@ -7,6 +7,15 @@ export type CaseStatus =
   | 'weak_case'
   | 'human_review'
   | 'resolved'
+  | 'request_more_evidence'
+  | 'escalate'
+  | 'accept'
+  | 'contest'
+  | 'action_required'
+  | 'under_review'
+  | 'won'
+  | 'lost'
+  | 'closed'
 
 export interface Case {
   id: string

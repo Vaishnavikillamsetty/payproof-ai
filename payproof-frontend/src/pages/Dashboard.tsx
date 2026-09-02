@@ -42,8 +42,18 @@ export default function Dashboard({ onSelectCase }: Props) {
     return () => clearInterval(id)
   }, [])
 
-  const filtered =
-    filter === 'all' ? cases : cases.filter((c) => c.status === filter)
+  const filterGroups: Record<FilterValue, string[]> = {
+    'all': [],
+    'strong_case': ['strong_case', 'accept', 'contest'],
+    'human_review': ['human_review', 'escalate'],
+    'request_more_evidence': ['request_more_evidence', 'weak_case'],
+    'investigating': ['investigating', 'new', 'under_review', 'action_required'],
+    'closed': ['closed', 'resolved', 'won', 'lost']
+  }
+
+  const filtered = filter === 'all' 
+    ? cases 
+    : cases.filter((c) => filterGroups[filter]?.includes(c.status) ?? c.status === filter)
 
   return (
     <main style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px' }}>

@@ -9,11 +9,11 @@ interface Props {
 
 const FILTERS: { label: string; value: FilterValue }[] = [
   { label: 'All', value: 'all' },
-  { label: 'Strong Case', value: 'strong_case' },
-  { label: 'Weak Case', value: 'weak_case' },
-  { label: 'Human Review', value: 'human_review' },
+  { label: 'Contest / Accept', value: 'strong_case' },
+  { label: 'Escalated / Review', value: 'human_review' },
+  { label: 'More Evidence', value: 'request_more_evidence' },
   { label: 'Investigating', value: 'investigating' },
-  { label: 'New', value: 'new' },
+  { label: 'Resolved / Closed', value: 'closed' },
 ]
 
 /**
