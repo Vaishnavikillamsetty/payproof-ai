@@ -32,7 +32,10 @@ class CaseResponse(BaseModel):
     @model_validator(mode='before')
     @classmethod
     def populate_evidence_types(cls, data):
-        # Works when ORM object is passed (from_attributes=True path)
+        # If evidence_types was pre-set by the optimized GET /cases/ query, use it.
+        if hasattr(data, '__dict__') and 'evidence_types' in data.__dict__:
+            return data
+        # Fallback: derive from the ORM relationship (used by single-case detail views)
         if hasattr(data, 'evidence'):
             data.__dict__.setdefault('evidence_types', [e.evidence_type for e in (data.evidence or [])])
         return data

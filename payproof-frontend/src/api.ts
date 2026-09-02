@@ -14,6 +14,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
+/** Fire-and-forget ping to wake the backend from Render cold sleep. */
+export function warmBackend(): void {
+  fetch(`${BASE.replace(/\/+$/, '')}/health`).catch(() => {})
+}
+
 export const api = {
   getCases: (): Promise<Case[]> =>
     request('/cases/'),

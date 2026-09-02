@@ -10,7 +10,6 @@ from app.db.session import get_db
 from app.agents.external_systems import get_demo_expected_amount
 from app.orchestrator import run_pipeline
 from app.schemas import AuditLogResponse, CaseCreate, CaseDetailResponse, CaseResponse
-from sqlalchemy.orm import joinedload
 
 logger = logging.getLogger(__name__)
 
@@ -69,12 +68,39 @@ def get_demo_info(transaction_id: str, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=List[CaseResponse])
 def get_cases(db: Session = Depends(get_db)):
-    return (
+    """
+    Return all cases for the dashboard list view.
+
+    Performance: Instead of joinedload(Case.evidence) which pulls every
+    evidence row just to extract type strings, we run a single lightweight
+    query for distinct evidence_types per case and attach them in Python.
+    This avoids transmitting large JSONB content columns over the wire.
+    """
+    cases = (
         db.query(Case)
-        .options(joinedload(Case.evidence))
         .order_by(Case.created_at.desc())
         .all()
     )
+
+    if cases:
+        case_ids = [c.id for c in cases]
+        # Single query: get distinct evidence types grouped by case_id
+        ev_rows = (
+            db.query(Evidence.case_id, Evidence.evidence_type)
+            .filter(Evidence.case_id.in_(case_ids))
+            .distinct()
+            .all()
+        )
+        # Build a lookup: case_id -> list of evidence type strings
+        ev_map: dict[UUID, list[str]] = {}
+        for case_id, ev_type in ev_rows:
+            ev_map.setdefault(case_id, []).append(ev_type)
+
+        # Attach to each case so the schema validator can read them
+        for c in cases:
+            c.__dict__["evidence_types"] = ev_map.get(c.id, [])
+
+    return cases
 
 
 @router.get("/{id}", response_model=CaseDetailResponse)
@@ -88,10 +114,8 @@ def get_case(id: UUID, db: Session = Depends(get_db)):
 @router.get("/{id}/audit", response_model=List[AuditLogResponse])
 def get_audit(id: UUID, db: Session = Depends(get_db)):
     """Return the full, immutable audit trail for a case in chronological order."""
-    # Verify the case exists first
-    if not db.query(Case).filter(Case.id == id).first():
-        raise HTTPException(status_code=404, detail="Case not found")
-
+    # Query audit logs directly — if none exist, the case either doesn't exist
+    # or simply has no audit entries yet. Both are fine to return as [].
     return (
         db.query(AuditLog)
         .filter(AuditLog.case_id == id)

@@ -98,20 +98,17 @@ export default function Dashboard({ onSelectCase }: Props) {
         <FilterPills active={filter} onChange={setFilter} />
       </div>
 
-      {/* Loading state */}
+      {/* Loading state - Skeletons */}
       {loading && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '60px 0',
-          }}
-        >
-          <LoadingSpinner />
-          <span className="font-body text-slate" style={{ marginLeft: 12, fontSize: 14 }}>
-            Loading cases…
-          </span>
+        <div>
+          {[...Array(5)].map((_, i) => (
+            <CaseCardSkeleton key={i} index={i} />
+          ))}
+          <div style={{ textAlign: 'center', marginTop: 24 }}>
+            <span className="font-mono text-slate" style={{ fontSize: 11, letterSpacing: '0.06em' }}>
+              WAKING BACKEND...
+            </span>
+          </div>
         </div>
       )}
 
@@ -218,30 +215,46 @@ export default function Dashboard({ onSelectCase }: Props) {
   )
 }
 
-function LoadingSpinner() {
+
+
+function CaseCardSkeleton({ index }: { index: number }) {
   return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 20 20"
-      fill="none"
-      aria-hidden="true"
-      style={{ animation: 'spin 0.8s linear infinite' }}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, delay: index * 0.05 }}
+      className="card"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 200px 200px 32px',
+        alignItems: 'center',
+        gap: 20,
+        padding: '16px 20px',
+        marginBottom: 8,
+        borderColor: 'var(--color-ink-border)',
+        background: 'rgba(255, 255, 255, 0.01)',
+      }}
     >
-      <circle
-        cx="10"
-        cy="10"
-        r="8"
-        stroke="var(--color-ink-border)"
-        strokeWidth="2"
-      />
-      <path
-        d="M10 2a8 8 0 0 1 8 8"
-        stroke="var(--color-teal)"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </svg>
+      <div>
+        <div style={{ height: 16, width: '40%', background: 'var(--color-ink-border)', borderRadius: 4, marginBottom: 8, animation: 'pulse 1.5s infinite' }} />
+        <div style={{ height: 14, width: '70%', background: 'var(--color-ink-border)', borderRadius: 4, marginBottom: 8, animation: 'pulse 1.5s infinite 0.2s' }} />
+        <div style={{ height: 12, width: '20%', background: 'var(--color-ink-border)', borderRadius: 4, animation: 'pulse 1.5s infinite 0.4s' }} />
+      </div>
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div style={{ height: 12, width: '40%', background: 'var(--color-ink-border)', borderRadius: 4 }} />
+          <div style={{ height: 12, width: '40%', background: 'var(--color-ink-border)', borderRadius: 4 }} />
+        </div>
+        <div style={{ height: 8, width: '100%', background: 'var(--color-ink-border)', borderRadius: 4, marginBottom: 8, animation: 'pulse 1.5s infinite 0.1s' }} />
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+           <div style={{ height: 12, width: '20%', background: 'var(--color-ink-border)', borderRadius: 4 }} />
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+         <div style={{ height: 24, width: '60%', background: 'var(--color-ink-border)', borderRadius: 12, marginBottom: 12, animation: 'pulse 1.5s infinite 0.3s' }} />
+         <div style={{ height: 12, width: '40%', background: 'var(--color-ink-border)', borderRadius: 4 }} />
+      </div>
+      <div />
+    </motion.div>
   )
 }

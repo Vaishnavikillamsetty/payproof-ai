@@ -1,9 +1,14 @@
 import { useState } from 'react'
+import { warmBackend } from './api'
 import NavBar from './components/NavBar'
 import Dashboard from './pages/Dashboard'
 import CaseDetail from './pages/CaseDetail'
 import NewCase from './pages/NewCase'
 import Metrics from './pages/Metrics'
+
+// Fire a lightweight /health ping as soon as JS loads to wake the backend
+// from Render free-tier cold sleep before the user triggers a data fetch.
+warmBackend()
 
 type ViewState = 
   | { type: 'dashboard' }

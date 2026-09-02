@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Numeric, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, String, Numeric, DateTime, Boolean, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -9,15 +9,15 @@ class Case(Base):
     __tablename__ = "cases"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    transaction_id = Column(String, nullable=False)
+    transaction_id = Column(String, nullable=False, index=True)
     dispute_reason = Column(String, nullable=False)
     customer_claim = Column(String, nullable=False)
     merchant_id = Column(String, nullable=False)
     amount = Column(Numeric, nullable=False)
-    status = Column(String, nullable=False, default="new")
+    status = Column(String, nullable=False, default="new", index=True)
     completeness_score = Column(Numeric, nullable=True)
     overall_confidence = Column(Numeric, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     evidence = relationship("Evidence", back_populates="case", cascade="all, delete-orphan")
@@ -28,20 +28,20 @@ class Evidence(Base):
     __tablename__ = "evidence"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    case_id = Column(UUID(as_uuid=True), ForeignKey("cases.id"))
+    case_id = Column(UUID(as_uuid=True), ForeignKey("cases.id"), index=True)
     evidence_type = Column(String, nullable=False)
     source_id = Column(String, nullable=True)
     content = Column(JSONB, nullable=False)
     event_timestamp = Column(DateTime(timezone=True), nullable=True)
     collected_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     case = relationship("Case", back_populates="evidence")
 
 class Claim(Base):
     __tablename__ = "claims"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    case_id = Column(UUID(as_uuid=True), ForeignKey("cases.id"))
+    case_id = Column(UUID(as_uuid=True), ForeignKey("cases.id"), index=True)
     claim_text = Column(String, nullable=False)
     supporting_evidence_ids = Column(ARRAY(UUID(as_uuid=True)), nullable=True)
     contradicting_evidence_ids = Column(ARRAY(UUID(as_uuid=True)), nullable=True)
@@ -54,7 +54,7 @@ class RuleFlag(Base):
     __tablename__ = "rule_flags"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    case_id = Column(UUID(as_uuid=True), ForeignKey("cases.id"))
+    case_id = Column(UUID(as_uuid=True), ForeignKey("cases.id"), index=True)
     rule_name = Column(String, nullable=False)
     triggered = Column(Boolean, nullable=False)
     detail = Column(String, nullable=True)
@@ -65,7 +65,7 @@ class AuditLog(Base):
     __tablename__ = "audit_log"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    case_id = Column(UUID(as_uuid=True), ForeignKey("cases.id"))
+    case_id = Column(UUID(as_uuid=True), ForeignKey("cases.id"), index=True)
     step = Column(String, nullable=False)
     detail = Column(JSONB, nullable=True)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
