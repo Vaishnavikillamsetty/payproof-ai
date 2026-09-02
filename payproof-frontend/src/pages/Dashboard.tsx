@@ -42,7 +42,7 @@ export default function Dashboard({ onSelectCase }: Props) {
     return () => clearInterval(id)
   }, [])
 
-  const filterGroups: Record<FilterValue, string[]> = {
+  const filterGroups: Partial<Record<FilterValue, string[]>> = {
     'all': [],
     'strong_case': ['strong_case', 'accept', 'contest'],
     'human_review': ['human_review', 'escalate'],

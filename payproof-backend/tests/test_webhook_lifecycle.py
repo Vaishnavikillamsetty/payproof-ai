@@ -72,11 +72,16 @@ def test_webhook_out_of_order_lifecycle_before_created(mock_live_provider, db_se
 
 def test_webhook_terminal_state_protection(mock_live_provider, db_session):
     from app.db.models import Case, AuditLog
-    _create_webhook(client, db_session, "payment.dispute.won", "disp_t1", "pay_t1")
+    
+    uid1 = str(uuid4())[:8]
+    disp1 = f"disp_t1_{uid1}"
+    pay1 = f"pay_t1_{uid1}"
+    
+    _create_webhook(client, db_session, "payment.dispute.won", disp1, pay1)
     
     # 1. WON -> LOST is rejected
-    _create_webhook(client, db_session, "payment.dispute.lost", "disp_t1", "pay_t1")
-    case1 = db_session.query(Case).filter_by(external_dispute_id="disp_t1").first()
+    _create_webhook(client, db_session, "payment.dispute.lost", disp1, pay1)
+    case1 = db_session.query(Case).filter_by(external_dispute_id=disp1).first()
     assert case1.status == "won"
     # Verify audit log
     audit = db_session.query(AuditLog).filter_by(case_id=case1.id, step="webhook_transition_rejected").first()
@@ -84,30 +89,38 @@ def test_webhook_terminal_state_protection(mock_live_provider, db_session):
     assert audit.detail["attempted_status"] == "lost"
     
     # 3. WON -> CLOSED is allowed
-    _create_webhook(client, db_session, "payment.dispute.closed", "disp_t1", "pay_t1")
+    _create_webhook(client, db_session, "payment.dispute.closed", disp1, pay1)
     db_session.refresh(case1)
     assert case1.status == "closed"
     
     # 5. CLOSED -> UNDER_REVIEW is rejected
-    _create_webhook(client, db_session, "payment.dispute.under_review", "disp_t1", "pay_t1")
+    _create_webhook(client, db_session, "payment.dispute.under_review", disp1, pay1)
     db_session.refresh(case1)
     assert case1.status == "closed"
     
     # 2. LOST -> WON is rejected
-    _create_webhook(client, db_session, "payment.dispute.lost", "disp_t2", "pay_t2")
-    _create_webhook(client, db_session, "payment.dispute.won", "disp_t2", "pay_t2")
-    case2 = db_session.query(Case).filter_by(external_dispute_id="disp_t2").first()
+    uid2 = str(uuid4())[:8]
+    disp2 = f"disp_t2_{uid2}"
+    pay2 = f"pay_t2_{uid2}"
+    
+    _create_webhook(client, db_session, "payment.dispute.lost", disp2, pay2)
+    _create_webhook(client, db_session, "payment.dispute.won", disp2, pay2)
+    case2 = db_session.query(Case).filter_by(external_dispute_id=disp2).first()
     assert case2.status == "lost"
     
     # 4. LOST -> CLOSED is allowed
-    _create_webhook(client, db_session, "payment.dispute.closed", "disp_t2", "pay_t2")
+    _create_webhook(client, db_session, "payment.dispute.closed", disp2, pay2)
     db_session.refresh(case2)
     assert case2.status == "closed"
     
     # 6. Out-of-order UNDER_REVIEW after WON does not regress the state
-    _create_webhook(client, db_session, "payment.dispute.won", "disp_t3", "pay_t3")
-    _create_webhook(client, db_session, "payment.dispute.under_review", "disp_t3", "pay_t3")
-    case3 = db_session.query(Case).filter_by(external_dispute_id="disp_t3").first()
+    uid3 = str(uuid4())[:8]
+    disp3 = f"disp_t3_{uid3}"
+    pay3 = f"pay_t3_{uid3}"
+    
+    _create_webhook(client, db_session, "payment.dispute.won", disp3, pay3)
+    _create_webhook(client, db_session, "payment.dispute.under_review", disp3, pay3)
+    case3 = db_session.query(Case).filter_by(external_dispute_id=disp3).first()
     assert case3.status == "won"
 
 def test_webhook_retry_failed_event(mock_live_provider, db_session):
