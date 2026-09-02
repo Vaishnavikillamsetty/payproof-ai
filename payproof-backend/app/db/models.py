@@ -110,3 +110,16 @@ class CommunicationLog(Base):
     message = Column(String, nullable=False)
     has_attachments = Column(Boolean, default=False)
     timestamp = Column(DateTime(timezone=True), nullable=True)
+
+class WebhookEvent(Base):
+    __tablename__ = "webhook_events"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    provider_event_id = Column(String, unique=True, index=True, nullable=False)
+    event_type = Column(String, nullable=False, index=True)
+    received_at = Column(DateTime(timezone=True), server_default=func.now())
+    processed_at = Column(DateTime(timezone=True), nullable=True)
+    status = Column(String, nullable=False, default="RECEIVED")  # RECEIVED, VERIFIED, PROCESSING, PROCESSED, FAILED, DUPLICATE
+    case_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    payload_reference = Column(JSONB, nullable=True)
+

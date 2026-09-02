@@ -272,7 +272,7 @@ def _run_anthropic_agent(case_id: str, db: Session) -> AgentRecommendation:
 
     while steps_used < MAX_AGENT_STEPS:
         response = client.messages.create(
-            model="claude-3-5-sonnet-20241022",
+            model=settings.anthropic_model,
             max_tokens=2048,
             system=SYSTEM_PROMPT,
             messages=messages,
@@ -338,7 +338,7 @@ def _run_anthropic_agent(case_id: str, db: Session) -> AgentRecommendation:
     })
 
     response = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
+        model=settings.anthropic_model,
         max_tokens=2048,
         system=SYSTEM_PROMPT,
         messages=messages,
