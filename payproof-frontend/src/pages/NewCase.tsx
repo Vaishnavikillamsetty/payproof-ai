@@ -110,6 +110,43 @@ export default function NewCase({ onCancel, onSuccess }: Props) {
         </div>
       )}
 
+      <div style={{ marginBottom: 24 }}>
+        <p className="font-mono text-slate" style={{ fontSize: 12, textTransform: 'uppercase', marginBottom: 12 }}>Quick Fill Demo Scenarios</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <button type="button" onClick={() => {
+            setTransactionId('DEMO_TXN_STRONG_1'); setMerchantId('MERCH_10482'); 
+            setDisputeReason('subscription not cancelled'); setAmountStr('299.99'); 
+            setCustomerClaim('I emailed them to cancel my subscription before the renewal date but was still charged.');
+          }} style={{ padding: '8px 12px', background: 'var(--color-ink-light)', border: '1px solid var(--color-ink-border)', borderRadius: 6, color: 'var(--color-teal)', fontFamily: 'var(--font-mono)', fontSize: 11, cursor: 'pointer', textAlign: 'left' }}>
+            1. Strong Case (Auto-Resolve)
+          </button>
+          
+          <button type="button" onClick={() => {
+            setTransactionId('DEMO_TXN_WEAK_1'); setMerchantId('MERCH_20911'); 
+            setDisputeReason('unauthorized transaction'); setAmountStr('49.50'); 
+            setCustomerClaim('I do not recognize this charge on my statement.');
+          }} style={{ padding: '8px 12px', background: 'var(--color-ink-light)', border: '1px solid var(--color-ink-border)', borderRadius: 6, color: 'var(--color-amber)', fontFamily: 'var(--font-mono)', fontSize: 11, cursor: 'pointer', textAlign: 'left' }}>
+            2. Weak Case (Sparse Evidence)
+          </button>
+          
+          <button type="button" onClick={() => {
+            setTransactionId('DEMO_TXN_REVIEW_1'); setMerchantId('MERCH_55021'); 
+            setDisputeReason('product not received'); setAmountStr('899.00'); 
+            setCustomerClaim('I never received this item. The tracking says delivered but nothing is here.');
+          }} style={{ padding: '8px 12px', background: 'var(--color-ink-light)', border: '1px solid var(--color-ink-border)', borderRadius: 6, color: 'var(--color-red)', fontFamily: 'var(--font-mono)', fontSize: 11, cursor: 'pointer', textAlign: 'left' }}>
+            3. Contradiction (Human Review)
+          </button>
+          
+          <button type="button" onClick={() => {
+            setTransactionId('DEMO_TXN_EMPTY_1'); setMerchantId('MERCH_00199'); 
+            setDisputeReason('product not as described'); setAmountStr('150.00'); 
+            setCustomerClaim('The item arrived damaged and the merchant is ignoring me.');
+          }} style={{ padding: '8px 12px', background: 'var(--color-ink-light)', border: '1px solid var(--color-ink-border)', borderRadius: 6, color: 'var(--color-slate-light)', fontFamily: 'var(--font-mono)', fontSize: 11, cursor: 'pointer', textAlign: 'left' }}>
+            4. No Evidence (Human Review)
+          </button>
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit} className="card" style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
         
         <div>
