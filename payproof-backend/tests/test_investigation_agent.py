@@ -98,6 +98,7 @@ def test_execute_tool_unknown_raises_value_error():
 # --------------------------------------------------------------------------- #
 
 def test_deterministic_fallback_escalates_on_contradiction():
+    # 1. Critical contradiction -> ESCALATE
     res = _deterministic_fallback(["payment", "delivery"], contradictions_found=True, completeness=100)
     assert res.ai_status == "FALLBACK"
     assert res.recommended_action == RecommendedAction.ESCALATE
@@ -105,7 +106,17 @@ def test_deterministic_fallback_escalates_on_contradiction():
     assert res.evidence_strength == EvidenceStrength.MEDIUM
     assert "Contradiction detected by rule engine" in res.contradictions
 
+def test_deterministic_fallback_refund_scenario():
+    # 2. Refund-before-dispute -> ACCEPT
+    res = _deterministic_fallback(["payment", "refund"], contradictions_found=False, completeness=100)
+    assert res.ai_status == "FALLBACK"
+    assert res.recommended_action == RecommendedAction.ACCEPT
+    assert res.risk_level == RiskLevel.LOW
+    assert res.evidence_strength == EvidenceStrength.HIGH
+    assert "Refund already processed" in res.summary
+
 def test_deterministic_fallback_contests_strong_evidence():
+    # 3. Strong verified merchant evidence -> CONTEST
     res = _deterministic_fallback(["payment", "delivery", "otp", "communication"], contradictions_found=False, completeness=100)
     assert res.ai_status == "FALLBACK"
     assert res.recommended_action == RecommendedAction.CONTEST
@@ -113,12 +124,23 @@ def test_deterministic_fallback_contests_strong_evidence():
     assert res.evidence_strength == EvidenceStrength.HIGH
     assert not res.missing_evidence
 
-def test_deterministic_fallback_accepts_weak_evidence():
-    res = _deterministic_fallback(["payment"], contradictions_found=False, completeness=15)
+def test_deterministic_fallback_weak_evidence():
+    # 4. Insufficient evidence -> REQUEST_MORE_EVIDENCE
+    res = _deterministic_fallback(["payment"], contradictions_found=False, completeness=35)
     assert res.ai_status == "FALLBACK"
-    assert res.recommended_action == RecommendedAction.ACCEPT
+    assert res.recommended_action == RecommendedAction.REQUEST_MORE_EVIDENCE
+    assert res.risk_level == RiskLevel.MEDIUM
+    assert res.evidence_strength == EvidenceStrength.LOW
+    assert "delivery" in res.missing_evidence
+
+def test_deterministic_fallback_empty_case():
+    # 5. No useful evidence -> REQUEST_MORE_EVIDENCE
+    res = _deterministic_fallback([], contradictions_found=False, completeness=0)
+    assert res.ai_status == "FALLBACK"
+    assert res.recommended_action == RecommendedAction.REQUEST_MORE_EVIDENCE
     assert res.risk_level == RiskLevel.HIGH
     assert res.evidence_strength == EvidenceStrength.LOW
+    assert "payment" in res.missing_evidence
     assert "delivery" in res.missing_evidence
 
 # --------------------------------------------------------------------------- #
@@ -133,15 +155,30 @@ def test_investigate_mock_strong_case():
     assert res.ai_status == "OK"
     assert res.confidence == 0.85
     assert not res.contradictions
+    # Verification of AI findings facts
+    payment_finding = next(f for f in res.key_findings if "payment" in f.finding.lower())
+    assert payment_finding.verified is True
+    delivery_finding = next(f for f in res.key_findings if "delivery" in f.finding.lower())
+    assert delivery_finding.verified is False
 
 @patch("app.agents.investigation_agent.settings.mock_verifier", True)
 def test_investigate_mock_weak_case():
-    # Case 2: Insufficient Evidence
+    # Case 2: Insufficient Evidence -> REQUEST_MORE_EVIDENCE
     res = investigate("case_123", MagicMock(), ["payment"], False, 35)
     assert res.recommended_action == RecommendedAction.REQUEST_MORE_EVIDENCE
     assert res.ai_status == "OK"
     assert res.confidence == 0.55
     assert "delivery" in res.missing_evidence
+
+@patch("app.agents.investigation_agent.settings.mock_verifier", True)
+def test_investigate_mock_empty_case():
+    # Empty case -> REQUEST_MORE_EVIDENCE
+    res = investigate("case_123", MagicMock(), [], False, 0)
+    assert res.recommended_action == RecommendedAction.REQUEST_MORE_EVIDENCE
+    assert res.ai_status == "OK"
+    assert res.confidence == 0.2
+    assert "delivery" in res.missing_evidence
+    assert "payment" in res.missing_evidence
 
 @patch("app.agents.investigation_agent.settings.mock_verifier", True)
 def test_investigate_mock_contradiction_case():

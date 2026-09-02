@@ -87,7 +87,6 @@ def _deterministic_fallback(
 ) -> AgentRecommendation:
     """
     Pure rule-based recommendation when the AI is unavailable.
-    Uses the same logic as policy.py but outputs the agent schema.
     """
     if contradictions_found:
         action = RecommendedAction.ESCALATE
@@ -95,24 +94,25 @@ def _deterministic_fallback(
         strength = EvidenceStrength.MEDIUM
         summary = "Contradicting evidence detected. Deterministic fallback recommends escalation."
         confidence = 0.4
+    elif "refund" in evidence_types: # Example rule if refund check exists
+        action = RecommendedAction.ACCEPT
+        risk = RiskLevel.LOW
+        strength = EvidenceStrength.HIGH
+        summary = "Refund already processed. Deterministic fallback recommends accepting."
+        confidence = 0.8
     elif completeness >= 50:
         action = RecommendedAction.CONTEST
         risk = RiskLevel.LOW
         strength = EvidenceStrength.HIGH
-        summary = "Sufficient evidence available. Deterministic fallback recommends contesting."
+        summary = "Sufficient verified evidence available. Deterministic fallback recommends contesting."
         confidence = 0.7
-    elif completeness >= 30:
-        action = RecommendedAction.REQUEST_MORE_EVIDENCE
-        risk = RiskLevel.MEDIUM
-        strength = EvidenceStrength.LOW
-        summary = "Partial evidence only. Deterministic fallback recommends gathering more."
-        confidence = 0.5
     else:
-        action = RecommendedAction.ACCEPT
-        risk = RiskLevel.HIGH
+        # For completeness < 50 (including 0), it's weak or empty, so we request more.
+        action = RecommendedAction.REQUEST_MORE_EVIDENCE
+        risk = RiskLevel.MEDIUM if completeness >= 30 else RiskLevel.HIGH
         strength = EvidenceStrength.LOW
-        summary = "Insufficient evidence to contest. Deterministic fallback recommends accepting."
-        confidence = 0.3
+        summary = "Insufficient or missing evidence. Deterministic fallback recommends gathering more before contesting."
+        confidence = 0.5 if completeness >= 30 else 0.2
 
     missing = []
     for et in ["payment", "delivery", "otp", "communication"]:
@@ -129,6 +129,7 @@ def _deterministic_fallback(
             finding=f"Evidence categories present: {', '.join(evidence_types) or 'none'}",
             source="deterministic_fallback",
             importance="high",
+            verified=False
         )],
         missing_evidence=missing,
         contradictions=["Contradiction detected by rule engine"] if contradictions_found else [],
@@ -156,16 +157,16 @@ def _mock_investigate(
     findings = []
 
     if "payment" in evidence_types:
-        findings.append(Finding(finding="Payment record found and verified", source="payment_provider", importance="high"))
+        findings.append(Finding(finding="Payment record found and verified", source="payment_provider", importance="high", verified=True))
     if "delivery" in evidence_types:
-        findings.append(Finding(finding="Delivery confirmation exists", source="merchant_delivery_system", importance="high"))
+        findings.append(Finding(finding="Delivery confirmation exists", source="merchant_delivery_system", importance="high", verified=False))
     if "otp" in evidence_types:
-        findings.append(Finding(finding="OTP/authentication verification completed", source="auth_system", importance="medium"))
+        findings.append(Finding(finding="OTP/authentication verification completed", source="auth_system", importance="medium", verified=False))
     if "communication" in evidence_types:
-        findings.append(Finding(finding="Customer communication records available", source="communication_log", importance="medium"))
+        findings.append(Finding(finding="Customer communication records available", source="communication_log", importance="medium", verified=False))
 
     if not findings:
-        findings.append(Finding(finding="No evidence records found", source="evidence_search", importance="high"))
+        findings.append(Finding(finding="No evidence records found", source="evidence_search", importance="high", verified=False))
 
     missing = [et for et in ["payment", "delivery", "otp", "communication"] if et not in evidence_types]
 
@@ -197,32 +198,19 @@ def _mock_investigate(
             source_status=SourceStatus.COMPLETE,
             ai_status="OK",
         )
-    elif completeness >= 30:
+    else:
+        # Empty or weak case
         return AgentRecommendation(
             recommended_action=RecommendedAction.REQUEST_MORE_EVIDENCE,
-            confidence=0.55,
-            risk_level=RiskLevel.MEDIUM,
+            confidence=0.55 if completeness >= 30 else 0.2,
+            risk_level=RiskLevel.MEDIUM if completeness >= 30 else RiskLevel.HIGH,
             evidence_strength=EvidenceStrength.LOW,
-            summary="Limited evidence available. Recommend gathering delivery confirmation and communication records before proceeding.",
+            summary="Insufficient evidence to safely recommend contesting. Recommend gathering delivery confirmation and communication records.",
             key_findings=findings,
             missing_evidence=missing,
             contradictions=[],
             human_approval_required=True,
-            source_status=SourceStatus.PARTIAL,
-            ai_status="OK",
-        )
-    else:
-        return AgentRecommendation(
-            recommended_action=RecommendedAction.ACCEPT,
-            confidence=0.3,
-            risk_level=RiskLevel.HIGH,
-            evidence_strength=EvidenceStrength.LOW,
-            summary="Insufficient evidence to contest this dispute. No payment, delivery, or communication records found.",
-            key_findings=findings,
-            missing_evidence=missing,
-            contradictions=[],
-            human_approval_required=True,
-            source_status=SourceStatus.LIMITED,
+            source_status=SourceStatus.PARTIAL if completeness >= 30 else SourceStatus.LIMITED,
             ai_status="OK",
         )
 
@@ -275,9 +263,16 @@ def _run_anthropic_agent(case_id: str, db: Session) -> AgentRecommendation:
 
     steps_used = 0
 
+    from app.db.models import AuditLog
+    
+    def _agent_audit(step_name: str, detail: dict):
+        entry = AuditLog(case_id=case_id, step=step_name, detail=detail)
+        db.add(entry)
+        db.commit()
+
     while steps_used < MAX_AGENT_STEPS:
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-3-5-sonnet-20241022",
             max_tokens=2048,
             system=SYSTEM_PROMPT,
             messages=messages,
@@ -305,11 +300,28 @@ def _run_anthropic_agent(case_id: str, db: Session) -> AgentRecommendation:
 
             try:
                 result = execute_tool(block.name, block.input, db)
+                _agent_audit("agent_tool_called", {
+                    "tool": block.name,
+                    "case_id": case_id,
+                    "status": "success"
+                })
             except ValueError as e:
                 result = {"error": str(e)}
+                _agent_audit("agent_tool_called", {
+                    "tool": block.name,
+                    "case_id": case_id,
+                    "status": "failure",
+                    "error": str(e)
+                })
             except Exception as e:
                 logger.error("Tool %s failed: %s", block.name, e)
                 result = {"error": f"Tool execution failed: {type(e).__name__}"}
+                _agent_audit("agent_tool_called", {
+                    "tool": block.name,
+                    "case_id": case_id,
+                    "status": "failure",
+                    "error": type(e).__name__
+                })
 
             tool_results.append({
                 "type": "tool_result",
@@ -326,7 +338,7 @@ def _run_anthropic_agent(case_id: str, db: Session) -> AgentRecommendation:
     })
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-3-5-sonnet-20241022",
         max_tokens=2048,
         system=SYSTEM_PROMPT,
         messages=messages,

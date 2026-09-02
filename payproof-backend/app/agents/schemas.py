@@ -41,6 +41,7 @@ class Finding(BaseModel):
     finding: str
     source: str
     importance: str  # "high", "medium", "low"
+    verified: bool = False  # Is this a definitively verified API fact or just a finding?
 
 
 class AgentRecommendation(BaseModel):
