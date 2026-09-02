@@ -14,6 +14,29 @@ from app.orchestrator import run_pipeline
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+STATE_PRIORITY = {
+    "new": 0,
+    "investigating": 1,
+    "request_more_evidence": 2,
+    "human_review": 2,
+    "escalate": 2,
+    "accept": 2,
+    "contest": 2,
+    "strong_case": 2,
+    "action_required": 3,
+    "under_review": 4,
+    "won": 5,
+    "lost": 5,
+    "closed": 5,
+}
+
+def get_state_priority(status: str) -> int:
+    return STATE_PRIORITY.get(status.lower(), -1)
+
+def can_transition(current: str, new: str) -> bool:
+    """Return True if the new state does not regress a terminal or higher-priority state."""
+    return get_state_priority(new) >= get_state_priority(current)
+
 def process_webhook_background(event_id: UUID, db: Session):
     """
     Background task to process a webhook event safely.
@@ -28,61 +51,76 @@ def process_webhook_background(event_id: UUID, db: Session):
         db.commit()
 
         payload = event.payload_reference
-        if event.event_type == "payment.dispute.created":
-            dispute_data = payload.get("payload", {}).get("dispute", {}).get("entity", {})
-            razorpay_dispute_id = dispute_data.get("id")
-            razorpay_payment_id = dispute_data.get("payment_id")
-            amount = dispute_data.get("amount", 0)
-            reason = dispute_data.get("reason_code", "unknown")
+        dispute_data = payload.get("payload", {}).get("dispute", {}).get("entity", {})
+        razorpay_dispute_id = dispute_data.get("id")
+        razorpay_payment_id = dispute_data.get("payment_id")
+        amount = dispute_data.get("amount", 0)
+        reason = dispute_data.get("reason_code", "unknown")
+        
+        if not razorpay_dispute_id:
+            logger.error("Missing dispute ID in webhook payload")
+            event.status = "FAILED"
+            db.commit()
+            return
             
-            if not razorpay_payment_id:
-                raise ValueError("Missing payment_id in webhook payload")
+        if not razorpay_payment_id:
+            logger.error("Missing payment_id in webhook payload")
+            event.status = "FAILED"
+            db.commit()
+            return
 
-            # Check if case exists for this payment_id/dispute_id
-            # Using transaction_id mapping to payment_id for simplicity
-            case = db.query(Case).filter(Case.transaction_id == razorpay_payment_id).first()
+        # 1. Identity lookup via external_dispute_id
+        case = db.query(Case).filter(Case.external_dispute_id == razorpay_dispute_id).first()
+
+        if event.event_type == "payment.dispute.created":
             if not case:
                 case = Case(
                     transaction_id=razorpay_payment_id,
+                    external_dispute_id=razorpay_dispute_id,
                     dispute_reason=reason,
                     customer_claim=f"Webhook event: {event.event_type}",
-                    merchant_id="merchant_webhook_123", # default or derived
-                    amount=amount / 100.0, # DB stores as float (numeric) for frontend compatibility
+                    merchant_id="merchant_webhook_123",
+                    amount=amount / 100.0,
                     status="new"
                 )
                 db.add(case)
                 db.commit()
                 db.refresh(case)
-                
-                # Audit Case Creation
                 db.add(AuditLog(
                     case_id=case.id,
                     step="webhook_case_created",
                     detail={"event_id": str(event.id), "event_type": event.event_type}
                 ))
             else:
-                # Update existing case
-                case.status = "new" # Reset status for re-investigation
+                # Update existing case (might have been created by an out-of-order lifecycle event)
+                case.transaction_id = razorpay_payment_id
+                case.dispute_reason = reason
+                if case.amount == 0:
+                    case.amount = amount / 100.0
+                
+                # State transition check
+                if can_transition(case.status, "new"):
+                    case.status = "new"
+                
                 db.add(AuditLog(
                     case_id=case.id,
                     step="webhook_case_updated",
                     detail={"event_id": str(event.id), "event_type": event.event_type}
                 ))
             db.commit()
-
-            # Link event to case
+            
             event.case_id = case.id
             db.commit()
 
-            # Trigger investigation
-            db.add(AuditLog(
-                case_id=case.id,
-                step="webhook_processing_started",
-                detail={"event_id": str(event.id)}
-            ))
-            db.commit()
-            
-            run_pipeline(case.id, db)
+            # Trigger investigation if the state allowed it to reset to 'new' or if it was just created
+            if case.status == "new":
+                db.add(AuditLog(
+                    case_id=case.id,
+                    step="webhook_processing_started",
+                    detail={"event_id": str(event.id)}
+                ))
+                db.commit()
+                run_pipeline(case.id, db)
             
             event.status = "PROCESSED"
             db.commit()
@@ -94,24 +132,47 @@ def process_webhook_background(event_id: UUID, db: Session):
             "payment.dispute.closed",
             "payment.dispute.under_review"
         ]:
-            # Just update the case status for lifecycle events
-            dispute_data = payload.get("payload", {}).get("dispute", {}).get("entity", {})
-            razorpay_payment_id = dispute_data.get("payment_id")
+            if not case:
+                # Out-of-order event arriving before 'created'
+                # Create a placeholder case
+                case = Case(
+                    transaction_id=razorpay_payment_id,
+                    external_dispute_id=razorpay_dispute_id,
+                    dispute_reason=reason,
+                    customer_claim=f"Placeholder from {event.event_type}",
+                    merchant_id="merchant_webhook_123",
+                    amount=amount / 100.0,
+                    status="new" # Temp state
+                )
+                db.add(case)
+                db.commit()
+                db.refresh(case)
+                
+            event.case_id = case.id
             
-            case = db.query(Case).filter(Case.transaction_id == razorpay_payment_id).first()
-            if case:
-                event.case_id = case.id
-                db.add(AuditLog(
-                    case_id=case.id,
-                    step="webhook_lifecycle_update",
-                    detail={"event_id": str(event.id), "event_type": event.event_type}
-                ))
-                # For demo, just log it. A robust system might update the status directly.
+            # Map event type to status
+            status_map = {
+                "payment.dispute.action_required": "action_required",
+                "payment.dispute.under_review": "under_review",
+                "payment.dispute.won": "won",
+                "payment.dispute.lost": "lost",
+                "payment.dispute.closed": "closed"
+            }
+            new_status = status_map.get(event.event_type)
+            
+            if new_status and can_transition(case.status, new_status):
+                case.status = new_status
+                
+            db.add(AuditLog(
+                case_id=case.id,
+                step="webhook_lifecycle_update",
+                detail={"event_id": str(event.id), "event_type": event.event_type, "new_status": new_status, "actual_case_status": case.status}
+            ))
             
             event.status = "PROCESSED"
             db.commit()
         else:
-            event.status = "PROCESSED" # Unsupported but valid event
+            event.status = "PROCESSED"
             db.commit()
 
     except Exception as e:
@@ -195,3 +256,27 @@ async def razorpay_webhook(
 
     # 6. Return Fast
     return {"status": "ok"}
+
+@router.post("/retry/{event_id}")
+def retry_webhook_processing(
+    event_id: UUID,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    Internal endpoint to retry processing a FAILED or stuck webhook event.
+    For hackathon use/recovery.
+    """
+    event = db.query(WebhookEvent).filter(WebhookEvent.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+        
+    if event.status not in ["FAILED", "PROCESSING", "VERIFIED"]:
+        raise HTTPException(status_code=400, detail=f"Cannot retry event in status {event.status}")
+        
+    event.status = "VERIFIED" # Reset to trigger processing again safely
+    db.commit()
+    
+    background_tasks.add_task(process_webhook_background, event.id, db)
+    
+    return {"status": "ok", "message": "Event queued for retry"}

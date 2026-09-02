@@ -9,7 +9,8 @@ class Case(Base):
     __tablename__ = "cases"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    transaction_id = Column(String, nullable=False, index=True)
+    transaction_id = Column(String, nullable=False, index=True) # Payment ID
+    external_dispute_id = Column(String, nullable=True, unique=True, index=True) # Primary external ID for idempotency
     dispute_reason = Column(String, nullable=False)
     customer_claim = Column(String, nullable=False)
     merchant_id = Column(String, nullable=False)
