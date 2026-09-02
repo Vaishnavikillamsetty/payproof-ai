@@ -1,21 +1,22 @@
 """
 Case Orchestrator — runs the full pipeline for a single case.
 
-Pipeline order (per build-plan Section 3):
-  1. Collect evidence          (DB query, deterministic)
-  2. Run rule engine           (deterministic if/else checks)
-  3. Derive per-case claims    (one claim per evidence type present)
-  4. Verifier agent            (LLM, once per claim, strict JSON)
-  5. Completeness score        (deterministic)
-  6. Policy gate               (deterministic threshold check)
+Pipeline order:
+  1. Fetch external evidence       (DB query / RazorpayProvider)
+  2. Collect evidence              (DB query, deterministic)
+  3. Run rule engine               (deterministic if/else checks)
+  4. Completeness score            (deterministic)
+  5. DisputeInvestigationAgent     (bounded AI tool-calling agent)
+  6. Policy gate                   (deterministic threshold check)
   7. Write every step to audit_log
 
-Every step is written to audit_log before the next step begins, so the trail
-is complete even if the orchestrator crashes mid-run.
+The AI agent (step 5) investigates the case using controlled tools,
+gathers evidence-grounded findings, and recommends an action.
+The policy gate (step 6) constrains the recommendation using numeric
+thresholds and can override unsafe AI outputs.
 
-The LLM (step 4) decides per-claim confidence only — it never decides
-"fraud or not".  The policy gate (step 6) makes the final routing decision
-based on numeric thresholds.
+Every step is written to audit_log before the next step begins, so the
+trail is complete even if the orchestrator crashes mid-run.
 """
 
 import json
@@ -28,7 +29,7 @@ from app.db.session import SessionLocal
 from app.db.models import AuditLog, Case, Claim, Evidence, RuleFlag
 from app.agents.evidence_collector import collect_evidence
 from app.agents.external_systems import fetch_external_evidence
-from app.agents.verifier import VerifierParseError, verify_claim
+from app.agents.investigation_agent import investigate
 from app.policy import completeness_score, policy_decision
 from app.rules.engine import check_timeline_rules
 
@@ -46,35 +47,45 @@ def _audit(db: Session, case_id: UUID, step: str, detail: dict) -> None:
     db.commit()
 
 
-def _derive_claims(case, evidence_list) -> list[str]:
+def _derive_claims_from_evidence(evidence_list, rule_results) -> list[str]:
     """
-    Build a small set of verifiable claim statements for this case.
-    These are plain sentences that the verifier checks against the evidence.
-    We keep this simple: one claim per dispute category.
+    Dynamically derive verifiable claims from actual collected evidence
+    and deterministic rule results — NOT from hardcoded dispute-reason strings.
+
+    Each claim is a factual statement about what evidence EXISTS (or doesn't).
     """
     claims = []
+    present_types = {e.evidence_type for e in evidence_list}
 
-    if case.dispute_reason == "product not received":
-        claims.append("The product was delivered to the customer.")
+    if "payment" in present_types:
+        payment_ev = next(e for e in evidence_list if e.evidence_type == "payment")
+        amount = payment_ev.content.get("amount", "unknown")
+        status = payment_ev.content.get("status", "unknown")
+        claims.append(f"Payment of {amount} was found with status '{status}'.")
 
-    if case.dispute_reason == "product not as described":
-        claims.append("The product received matched the merchant's description.")
+    if "delivery" in present_types:
+        delivery_ev = next(e for e in evidence_list if e.evidence_type == "delivery")
+        d_status = delivery_ev.content.get("status", "unknown")
+        signed_by = delivery_ev.content.get("signed_by", "unknown")
+        claims.append(f"Delivery record shows status '{d_status}', signed by '{signed_by}'.")
 
-    if case.dispute_reason == "duplicate charge":
-        claims.append("The customer was charged more than once for this transaction.")
+    if "otp" in present_types:
+        otp_ev = next(e for e in evidence_list if e.evidence_type == "otp")
+        verified = otp_ev.content.get("verified", False)
+        claims.append(f"OTP/authentication verification: {'completed successfully' if verified else 'not verified'}.")
 
-    if case.dispute_reason == "subscription not cancelled":
-        claims.append("The customer requested cancellation before the charge date.")
+    if "communication" in present_types:
+        comm_ev = next(e for e in evidence_list if e.evidence_type == "communication")
+        channel = comm_ev.content.get("channel", "unknown")
+        claims.append(f"Customer communication via {channel} is available.")
 
-    if case.dispute_reason == "unauthorized transaction":
-        claims.append("The transaction was authorized by the account holder.")
+    # Record any triggered rules as factual claims
+    triggered_rules = [(name, detail) for name, trig, detail in rule_results if trig]
+    for rule_name, detail in triggered_rules:
+        claims.append(f"Rule '{rule_name}' triggered: {detail}")
 
-    # Universal claim: use amount from the actual payment evidence record if
-    # present, so the claim matches what the verifier will read in the evidence.
-    # Fall back to case.amount only when no payment evidence exists yet.
-    payment_ev = next((e for e in evidence_list if e.evidence_type == "payment"), None)
-    payment_amount = float(payment_ev.content.get("amount", case.amount)) if payment_ev else float(case.amount)
-    claims.append(f"The disputed amount of {payment_amount} matches the payment record.")
+    if not claims:
+        claims.append("No evidence records were found for this case.")
 
     return claims
 
@@ -87,10 +98,6 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
     """
     Execute the full evidence-verification pipeline for a case.
     Updates the Case row in-place and writes a complete audit trail.
-
-    If db is None (the normal path for background tasks), a fresh session is
-    created and owned by this function.  Callers such as evaluate.py may pass
-    their own session for synchronous, transactional use.
     """
     _owns_session = db is None
     if _owns_session:
@@ -103,28 +110,28 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
             return
 
         # -------------------------------------------------------------- #
-        # Step 0 (live cases only): Simulate demo evidence if none exists #
+        # Step 0: Fetch external evidence if none exists                  #
         # -------------------------------------------------------------- #
         existing_evidence_count = (
             db.query(Evidence).filter(Evidence.case_id == case_id).count()
         )
         if existing_evidence_count == 0:
-            logger.info(f"case {case_id}: no existing evidence. Querying seeded external systems...")
+            logger.info("case %s: no existing evidence. Querying external systems...", case_id)
             created = fetch_external_evidence(case, db)
+            _audit(db, case_id, "external_evidence_fetched", {"records_created": created})
             if created > 0:
-                logger.info(f"case {case_id}: retrieved {created} evidence records from external systems.")
+                logger.info("case %s: retrieved %d evidence records.", case_id, created)
             else:
-                logger.info(f"case {case_id}: no external records found.")
+                logger.info("case %s: no external records found.", case_id)
 
         # ------------------------------------------------------------------ #
         # Step 1: Collect evidence                                            #
         # ------------------------------------------------------------------ #
         evidence_list = collect_evidence(case_id, db)
+        evidence_types = list({e.evidence_type for e in evidence_list})
         logger.info(
             "case %s: collected %d evidence record(s) — types: [%s]",
-            case_id,
-            len(evidence_list),
-            ", ".join(e.evidence_type for e in evidence_list),
+            case_id, len(evidence_list), ", ".join(evidence_types),
         )
 
         evidence_summary = [
@@ -133,6 +140,7 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
         ]
         _audit(db, case_id, "evidence_collected", {
             "count": len(evidence_list),
+            "types": evidence_types,
             "items": evidence_summary,
         })
 
@@ -153,7 +161,7 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
             ))
         db.commit()
 
-        _audit(db, case_id, "rule_checked", {
+        _audit(db, case_id, "rules_checked", {
             "flags": [
                 {"rule": name, "triggered": trig, "detail": det}
                 for name, trig, det in rule_results
@@ -163,91 +171,78 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
         contradictions_found = any(trig for _, trig, _ in rule_results)
 
         # ------------------------------------------------------------------ #
-        # Step 3: Derive claims                                               #
-        # ------------------------------------------------------------------ #
-        claim_texts = _derive_claims(case, evidence_list)
-        _audit(db, case_id, "claims_derived", {"claims": claim_texts})
-
-        # ------------------------------------------------------------------ #
-        # Step 4: Verifier agent — one LLM call per claim                    #
-        # ------------------------------------------------------------------ #
-        evidence_dicts = [
-            {
-                "evidence_type": e.evidence_type,
-                "source_id": e.source_id,
-                "content": e.content,
-                "event_timestamp": str(e.event_timestamp),
-            }
-            for e in evidence_list
-        ]
-
-        claim_rows = []
-        confidence_values = []
-
-        for claim_text in claim_texts:
-            try:
-                result = verify_claim(claim_text, evidence_dicts)
-                verdict = result["verdict"]
-                confidence = result["confidence"]
-                reasoning = result["reasoning"]
-            except VerifierParseError as exc:
-                # Hard failure: log it, mark unverifiable, do NOT guess
-                logger.error("VerifierParseError for claim %r: %s", claim_text, exc)
-                verdict = "unverifiable"
-                confidence = 0.0
-                reasoning = f"System error during verification: {exc}"
-                _audit(db, case_id, "verifier_parse_error", {
-                    "claim": claim_text,
-                    "error": str(exc),
-                })
-
-            claim_row = Claim(
-                case_id=case_id,
-                claim_text=claim_text,
-                confidence=confidence,
-                verdict=verdict,
-                # evidence IDs are not split per-claim at this stage; done in Phase 4
-                supporting_evidence_ids=[],
-                contradicting_evidence_ids=[],
-            )
-            db.add(claim_row)
-            claim_rows.append(claim_row)
-            confidence_values.append(confidence)
-
-            _audit(db, case_id, "claim_verified", {
-                "claim": claim_text,
-                "verdict": verdict,
-                "confidence": confidence,
-                "reasoning": reasoning,
-            })
-
-        db.commit()
-
-        # ------------------------------------------------------------------ #
-        # Step 5: Completeness score                                          #
+        # Step 3: Completeness score                                          #
         # ------------------------------------------------------------------ #
         score, missing = completeness_score(evidence_list)
-        avg_confidence = (
-            sum(confidence_values) / len(confidence_values)
-            if confidence_values else 0.0
-        )
 
         _audit(db, case_id, "completeness_scored", {
             "score": score,
             "missing_evidence": missing,
-            "avg_confidence": round(avg_confidence, 4),
         })
 
         # ------------------------------------------------------------------ #
-        # Step 6: Policy gate                                                 #
+        # Step 4: Dynamic claim derivation (evidence-driven, not hardcoded)   #
         # ------------------------------------------------------------------ #
+        claim_texts = _derive_claims_from_evidence(evidence_list, rule_results)
+        _audit(db, case_id, "claims_derived", {"claims": claim_texts})
+
+        for claim_text in claim_texts:
+            db.add(Claim(
+                case_id=case_id,
+                claim_text=claim_text,
+                confidence=None,
+                verdict=None,
+                supporting_evidence_ids=[],
+                contradicting_evidence_ids=[],
+            ))
+        db.commit()
+
+        # ------------------------------------------------------------------ #
+        # Step 5: DisputeInvestigationAgent                                   #
+        # ------------------------------------------------------------------ #
+        _audit(db, case_id, "agent_investigation_started", {
+            "evidence_types": evidence_types,
+            "completeness": score,
+            "contradictions_found": contradictions_found,
+        })
+
+        recommendation = investigate(
+            case_id=str(case_id),
+            db=db,
+            evidence_types=evidence_types,
+            contradictions_found=contradictions_found,
+            completeness=score,
+        )
+
+        _audit(db, case_id, "agent_recommendation_created", {
+            "recommended_action": recommendation.recommended_action.value,
+            "confidence": recommendation.confidence,
+            "risk_level": recommendation.risk_level.value,
+            "evidence_strength": recommendation.evidence_strength.value,
+            "summary": recommendation.summary,
+            "missing_evidence": recommendation.missing_evidence,
+            "contradictions": recommendation.contradictions,
+            "ai_status": recommendation.ai_status,
+            "source_status": recommendation.source_status.value,
+        })
+
+        if recommendation.ai_status == "FALLBACK":
+            _audit(db, case_id, "agent_fallback_used", {
+                "reason": "AI agent failed — used deterministic fallback",
+            })
+
+        # ------------------------------------------------------------------ #
+        # Step 6: Policy gate — constrains the agent recommendation           #
+        # ------------------------------------------------------------------ #
+        avg_confidence = recommendation.confidence
         status, reason = policy_decision(score, avg_confidence, contradictions_found)
 
         _audit(db, case_id, "policy_decision", {
             "status": status,
             "reason": reason,
             "completeness": score,
-            "avg_confidence": round(avg_confidence, 4),
+            "agent_confidence": avg_confidence,
+            "agent_recommendation": recommendation.recommended_action.value,
             "contradictions_found": contradictions_found,
         })
 
@@ -260,11 +255,12 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
         db.commit()
 
         logger.info(
-            "case %s: pipeline complete — status=%s completeness=%d avg_confidence=%.3f",
+            "case %s: pipeline complete — status=%s completeness=%d confidence=%.3f agent_action=%s ai_status=%s",
             case_id, status, score, avg_confidence,
+            recommendation.recommended_action.value,
+            recommendation.ai_status,
         )
 
     finally:
         if _owns_session:
             db.close()
-

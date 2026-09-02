@@ -68,7 +68,7 @@ class TestDemoRazorpayProvider:
         assert result.payment_id == "DEMO_TXN_STRONG_1"
         assert result.source == "DEMO_RAZORPAY_DATA"
         assert result.mode == "demo"
-        assert result.amount == 299.99
+        assert result.amount_minor == 29999  # 299.99 * 100 in minor units
 
     def test_get_payment_details_for_empty_id_returns_none(self):
         """DEMO_TXN_EMPTY_1 must return None — no payment seeded."""
@@ -106,12 +106,13 @@ class TestDemoRazorpayProvider:
     def test_normalized_model_has_correct_fields(self):
         result = self.provider.get_payment_details("DEMO_TXN_STRONG_1")
         assert hasattr(result, "payment_id")
-        assert hasattr(result, "amount")
+        assert hasattr(result, "amount_minor")   # integer minor units, NOT float amount
         assert hasattr(result, "currency")
         assert hasattr(result, "status")
         assert hasattr(result, "created_at")
         assert hasattr(result, "source")
         assert hasattr(result, "mode")
+        assert isinstance(result.amount_minor, int)
 
 
 # ---------------------------------------------------------------------------
@@ -144,7 +145,7 @@ class TestLiveRazorpayProvider:
         result = self.provider.get_payment_details("pay_test123")
         assert result is not None
         assert result.payment_id == "pay_test123"
-        assert result.amount == 299.99  # converted from paise
+        assert result.amount_minor == 29999  # raw paise value from API
         assert result.currency == "INR"
         assert result.source == "LIVE_RAZORPAY_API"
         assert result.mode == "live"
@@ -178,7 +179,7 @@ class TestLiveRazorpayProvider:
         results = self.provider.get_refund_details("pay_test123")
         assert len(results) == 1
         assert results[0].refund_id == "rfnd_test1"
-        assert results[0].amount == 100.0
+        assert results[0].amount_minor == 10000  # raw paise value from API
         assert results[0].source == "LIVE_RAZORPAY_API"
 
     def test_get_refund_details_empty(self):

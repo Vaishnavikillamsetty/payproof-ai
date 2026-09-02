@@ -12,16 +12,22 @@ from app.services.razorpay.models import (
     NormalizedRefundDetails
 )
 
+
 def _hash_scenario(txn_id: str) -> int:
     digest = hashlib.sha256(txn_id.encode()).hexdigest()
     return int(digest[:8], 16) % 10
 
+
 class DemoRazorpayProvider(RazorpayProvider):
     """
     Demo provider for the Razorpay Buildathon.
-    Uses seeded database tables or deterministic generation to simulate the Razorpay API.
+
+    Uses seeded database tables or deterministic generation to simulate
+    the Razorpay API. All amounts are in minor units (paise/cents).
+    Clearly labelled as DEMO_RAZORPAY_DATA so the UI can distinguish
+    demo data from live Razorpay data.
     """
-    
+
     SOURCE = "DEMO_RAZORPAY_DATA"
     MODE = "demo"
 
@@ -31,28 +37,30 @@ class DemoRazorpayProvider(RazorpayProvider):
     def get_payment_details(self, payment_id: str) -> Optional[NormalizedPaymentDetails]:
         db = self._get_db()
         try:
-            # Check seeded data first
             rec = db.query(PaymentGatewayRecord).filter_by(transaction_id=payment_id).first()
             if rec:
+                # Convert decimal to integer minor units (multiply by 100)
+                amount_minor = int(round(float(rec.amount) * 100))
                 return NormalizedPaymentDetails(
                     payment_id=payment_id,
-                    amount=float(rec.amount),
+                    amount_minor=amount_minor,
                     currency=rec.currency,
                     status=rec.status,
                     created_at=rec.timestamp or datetime.now(timezone.utc),
                     source=self.SOURCE,
                     mode=self.MODE
                 )
-            
-            # Deterministic fallback for unseeded IDs
+
+            # Known intentionally empty IDs — never fallback
             if payment_id.startswith("DEMO_TXN_EMPTY"):
                 return None
-                
+
+            # Deterministic hash fallback for unseeded non-DEMO_ IDs
             bucket = _hash_scenario(payment_id)
             if bucket <= 8:
                 return NormalizedPaymentDetails(
                     payment_id=payment_id,
-                    amount=299.99, # Arbitrary default for unseeded generated
+                    amount_minor=29999,  # $299.99 in cents
                     currency="USD",
                     status="captured",
                     created_at=datetime.now(timezone.utc),
@@ -65,12 +73,11 @@ class DemoRazorpayProvider(RazorpayProvider):
 
     def get_refund_details(self, payment_id: str) -> List[NormalizedRefundDetails]:
         bucket = _hash_scenario(payment_id)
-        # Simulate a refund for specific hash buckets if requested in a demo
-        if bucket == 7: # Example arbitrary bucket for refunds
+        if bucket == 7:
             return [NormalizedRefundDetails(
                 refund_id=f"rfnd_{payment_id[-6:]}",
                 payment_id=payment_id,
-                amount=299.99,
+                amount_minor=29999,
                 currency="USD",
                 status="processed",
                 created_at=datetime.now(timezone.utc),
@@ -80,11 +87,10 @@ class DemoRazorpayProvider(RazorpayProvider):
         return []
 
     def get_dispute_details(self, dispute_id: str) -> Optional[NormalizedDisputeDetails]:
-        # Generate a stable fake dispute
         return NormalizedDisputeDetails(
             dispute_id=dispute_id,
             payment_id=f"pay_{dispute_id[-6:]}",
-            amount=299.99,
+            amount_minor=29999,
             currency="USD",
             reason_code="product_not_received",
             reason_description="Customer claims product was not delivered",
@@ -96,7 +102,11 @@ class DemoRazorpayProvider(RazorpayProvider):
         )
 
     def verify_webhook_signature(self, payload: bytes, signature: str) -> bool:
-        # In demo mode, always accept for ease of testing, or enforce a static test signature
+        """
+        In demo mode, accept the static test signature string.
+        The real HMAC-SHA256 verification lives in LiveRazorpayProvider.
+        NOTE: payload must be the raw request bytes — never JSON-parsed/re-serialized.
+        """
         if signature == "test_demo_signature":
             return True
         return False
