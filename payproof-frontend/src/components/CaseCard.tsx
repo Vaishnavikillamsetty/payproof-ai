@@ -47,12 +47,8 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
       }}
     >
       <div
-        className={`card ${theme.edgeClass}`}
+        className={`card ${theme.edgeClass} grid grid-cols-1 md:grid-cols-[1fr_200px_200px_32px] gap-5 items-start md:items-center`}
         style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 200px 200px 32px',
-          alignItems: 'center',
-          gap: 20,
           padding: '16px 20px',
           marginBottom: 8,
           transition: 'border-color 0.15s ease, background 0.15s ease',
@@ -159,8 +155,8 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
         </div>
 
         {/* ── Col 3: Status badge + timestamp ────────────────────────── */}
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ marginBottom: 12 }}>
+        <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto mt-2 md:mt-0">
+          <div className="md:mb-3">
             <VerdictStamp status={c.status} confidence={c.overall_confidence} size="small" />
           </div>
           <div
@@ -172,7 +168,7 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
         </div>
 
         {/* ── Col 4: Chevron ─────────────────────────────────────────── */}
-        <div style={{ textAlign: 'center' }}>
+        <div className="flex justify-end md:justify-center w-full mt-2 md:mt-0">
           <svg
             width="16"
             height="16"

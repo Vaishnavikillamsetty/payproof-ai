@@ -37,12 +37,7 @@ export default function SummaryStrip({ cases }: Props) {
 
   return (
     <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 12,
-        marginBottom: 28,
-      }}
+      className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-7"
     >
       {stats.map((s) => (
         <div

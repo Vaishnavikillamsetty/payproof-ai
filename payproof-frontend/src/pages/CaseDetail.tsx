@@ -148,7 +148,7 @@ export default function CaseDetail({ caseId, onBack }: Props) {
              <h3 className="font-mono text-slate" style={{ fontSize: 12, textTransform: 'uppercase', marginBottom: 16 }}>
                 Completeness Score
              </h3>
-             <CompletenessBar score={c.completeness_score} showLabel={true} evidence={c.evidence} />
+             <CompletenessBar score={c.completeness_score} showLabel={true} showChecklist={true} evidence={c.evidence} />
              
              {routingReason && c.status !== 'human_review' ? (
                <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px solid var(--color-ink-border)' }}>

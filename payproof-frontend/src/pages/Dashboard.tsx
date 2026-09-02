@@ -223,12 +223,8 @@ function CaseCardSkeleton({ index }: { index: number }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
-      className="card"
+      className="card grid grid-cols-1 md:grid-cols-[1fr_200px_200px_32px] gap-5 items-start md:items-center"
       style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 200px 200px 32px',
-        alignItems: 'center',
-        gap: 20,
         padding: '16px 20px',
         marginBottom: 8,
         borderColor: 'var(--color-ink-border)',
@@ -250,11 +246,13 @@ function CaseCardSkeleton({ index }: { index: number }) {
            <div style={{ height: 12, width: '20%', background: 'var(--color-ink-border)', borderRadius: 4 }} />
         </div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-         <div style={{ height: 24, width: '60%', background: 'var(--color-ink-border)', borderRadius: 12, marginBottom: 12, animation: 'pulse 1.5s infinite 0.3s' }} />
-         <div style={{ height: 12, width: '40%', background: 'var(--color-ink-border)', borderRadius: 4 }} />
+      <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto mt-2 md:mt-0">
+         <div style={{ height: 24, width: '60px', background: 'var(--color-ink-border)', borderRadius: 12, animation: 'pulse 1.5s infinite 0.3s' }} className="md:mb-3" />
+         <div style={{ height: 12, width: '80px', background: 'var(--color-ink-border)', borderRadius: 4 }} />
       </div>
-      <div />
+      <div className="flex justify-end md:justify-center w-full mt-2 md:mt-0">
+        <div style={{ height: 16, width: 16, background: 'var(--color-ink-border)', borderRadius: 4, animation: 'pulse 1.5s infinite 0.5s' }} />
+      </div>
     </motion.div>
   )
 }

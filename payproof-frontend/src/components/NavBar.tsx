@@ -46,7 +46,7 @@ export default function NavBar({ children, onNavMetrics }: Props) {
             PayProof AI
           </span>
           <span
-            className="font-body text-slate"
+            className="font-body text-slate hidden sm:inline"
             style={{ fontSize: 12, letterSpacing: '0.04em' }}
           >
             Evidence-First Dispute Defense
