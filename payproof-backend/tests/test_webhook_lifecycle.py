@@ -102,8 +102,16 @@ def test_webhook_retry_failed_event(mock_live_provider, db_session):
     }
     db_session.commit()
     
-    # Hit retry endpoint
+    # Auth check - missing token
     retry_resp = client.post(f"/webhooks/retry/{event.id}")
+    assert retry_resp.status_code == 401
+    
+    # Auth check - invalid token
+    retry_resp = client.post(f"/webhooks/retry/{event.id}", headers={"x-internal-token": "wrong_token"})
+    assert retry_resp.status_code == 401
+
+    # Hit retry endpoint
+    retry_resp = client.post(f"/webhooks/retry/{event.id}", headers={"x-internal-token": "dev_admin_token"})
     assert retry_resp.status_code == 200
     
     # Ensure it's now PROCESSED

@@ -4,8 +4,10 @@ from app.routers import cases, metrics, webhooks
 from app.db.session import engine
 from app.db import models
 
-# Create tables for phase 1 testing (in a real app, use alembic)
-models.Base.metadata.create_all(bind=engine)
+from app.db.init_db import init_db
+
+# Initialize database schema and run hackathon migrations
+init_db()
 
 app = FastAPI(title="PayProof AI Backend")
 

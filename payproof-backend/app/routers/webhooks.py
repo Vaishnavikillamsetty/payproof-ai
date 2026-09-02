@@ -261,12 +261,19 @@ async def razorpay_webhook(
 def retry_webhook_processing(
     event_id: UUID,
     background_tasks: BackgroundTasks,
+    x_internal_token: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """
     Internal endpoint to retry processing a FAILED or stuck webhook event.
-    For hackathon use/recovery.
+    For hackathon use/recovery. Protected by internal token.
     """
+    import secrets
+    from app.config import settings
+    
+    if not x_internal_token or not secrets.compare_digest(x_internal_token, settings.internal_admin_token):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
     event = db.query(WebhookEvent).filter(WebhookEvent.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
