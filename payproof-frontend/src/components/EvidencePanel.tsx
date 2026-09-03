@@ -9,7 +9,7 @@ interface Props {
 const PROVENANCE_CONFIG = {
   razorpay: {
     label: 'VERIFIED BY RAZORPAY',
-    icon: '✓',
+    icon: '???',
     color: 'var(--color-teal)',
     bg: 'rgba(63,167,150,0.08)',
     border: 'rgba(63,167,150,0.25)',
@@ -17,7 +17,7 @@ const PROVENANCE_CONFIG = {
   },
   merchant: {
     label: 'MERCHANT EVIDENCE',
-    icon: '◐',
+    icon: '???',
     color: 'var(--color-amber)',
     bg: 'rgba(224,163,57,0.08)',
     border: 'rgba(224,163,57,0.25)',
@@ -25,7 +25,7 @@ const PROVENANCE_CONFIG = {
   },
   ai: {
     label: 'AI ANALYSIS',
-    icon: '🤖',
+    icon: '????',
     color: 'var(--color-slate-light)',
     bg: 'rgba(91,107,124,0.08)',
     border: 'rgba(91,107,124,0.25)',
@@ -52,7 +52,7 @@ function renderEvidenceFields(content: Record<string, unknown>) {
         <div key={key} style={{ minWidth: 120 }}>
           <span className="font-mono" style={{ fontSize: 10, color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block' }}>{key.replace(/_/g, ' ')}</span>
           <span className="font-mono" style={{ fontSize: 12, color: 'rgba(0,0,0,0.75)', fontWeight: 500 }}>
-            {typeof val === 'boolean' ? (val ? 'Yes' : 'No') : String(val ?? '—')}
+            {typeof val === 'boolean' ? (val ? 'Yes' : 'No') : String(val ?? '???')}
           </span>
         </div>
       ))}
@@ -79,16 +79,16 @@ export default function EvidencePanel({ evidenceList }: Props) {
           background: 'rgba(91,107,124,0.12)', border: '1px solid var(--color-ink-border)',
           borderRadius: 4, padding: '8px 12px', marginBottom: 20,
         }}>
-          <span style={{ fontSize: 13 }}>⚗️</span>
+          <span style={{ fontSize: 13 }}>??????</span>
           <span className="font-mono text-slate" style={{ fontSize: 11, letterSpacing: '0.04em' }}>
-            DEMO DATA — evidence retrieved from seeded demo records simulating payment gateway, courier, OTP, and communication systems.
+            DEMO DATA ??? evidence retrieved from seeded demo records simulating payment gateway, courier, OTP, and communication systems.
           </span>
         </div>
       )}
 
       {evidenceList.length === 0 && (
         <div style={{ padding: '24px 0', textAlign: 'center' }}>
-          <div className="font-mono text-slate" style={{ fontSize: 13 }}>⚠ MISSING INFORMATION</div>
+          <div className="font-mono text-slate" style={{ fontSize: 13 }}>??? MISSING INFORMATION</div>
           <div className="font-body text-slate" style={{ fontSize: 14, marginTop: 8, fontStyle: 'italic' }}>
             No evidence was collected for this case. Investigation may require manual evidence submission.
           </div>

@@ -10,13 +10,30 @@ from app.db.models import (
 )
 
 def init_db():
-    # Create the new tables
     Base.metadata.create_all(bind=engine)
+
+def _add_strong(db, txn, now, amount, comm_msg=""):
+    db.add(PaymentGatewayRecord(transaction_id=txn, amount=amount, currency="USD", status="success", timestamp=now - timedelta(days=5)))
+    db.add(DeliveryRecord(transaction_id=txn, tracking_number=f"TRK_{txn}", status="delivered", signed_by="Customer", address_match=True, notes="Signed", timestamp=now - timedelta(days=2)))
+    db.add(OtpLog(transaction_id=txn, verified=True, ip_address="192.168.1.5", timestamp=now - timedelta(days=5)))
+    if comm_msg:
+        db.add(CommunicationLog(transaction_id=txn, channel="email", message=comm_msg, has_attachments=False, timestamp=now - timedelta(days=1)))
+
+def _add_weak(db, txn, now, amount):
+    db.add(PaymentGatewayRecord(transaction_id=txn, amount=amount, currency="USD", status="success", timestamp=now - timedelta(days=5)))
+
+def _add_contradiction(db, txn, now, amount, delivery_status="delivered", delivery_signed="Front Desk", comm_msg=""):
+    db.add(PaymentGatewayRecord(transaction_id=txn, amount=amount, currency="USD", status="success", timestamp=now - timedelta(days=5)))
+    db.add(DeliveryRecord(transaction_id=txn, tracking_number=f"TRK_{txn}", status=delivery_status, signed_by=delivery_signed, address_match=True, notes="Accepted", timestamp=now - timedelta(days=3)))
+    if comm_msg:
+        db.add(CommunicationLog(transaction_id=txn, channel="chat", message=comm_msg, has_attachments=False, timestamp=now - timedelta(days=1)))
+
+def _add_empty(db, txn, now, amount):
+    db.add(PaymentGatewayRecord(transaction_id=txn, amount=amount, currency="USD", status="success", timestamp=now - timedelta(days=5)))
 
 def seed_db():
     db = SessionLocal()
     
-    # Clear existing seed data to allow re-runs
     db.query(PaymentGatewayRecord).delete()
     db.query(DeliveryRecord).delete()
     db.query(OtpLog).delete()
@@ -24,88 +41,46 @@ def seed_db():
 
     now = datetime.now(timezone.utc)
     
-    # ---------------------------------------------------------
-    # Scenario 1: Strong Case (Full Evidence)
-    # ---------------------------------------------------------
-    txn_strong = "DEMO_TXN_STRONG_1"
+    _add_strong(db, "DEMO_SCN_01", now, 299.99, comm_msg="Please cancel my subscription before renewal.")
+    _add_strong(db, "DEMO_SCN_02", now, 129.50)
+    _add_strong(db, "DEMO_SCN_03", now, 599.00, comm_msg="Where is my item?")
     
-    db.add(PaymentGatewayRecord(
-        transaction_id=txn_strong, amount=299.99, currency="USD", status="success",
-        timestamp=now - timedelta(days=5)
-    ))
-    db.add(DeliveryRecord(
-        transaction_id=txn_strong, tracking_number="TRK_STRONG_1", status="delivered",
-        signed_by="Customer", address_match=True, notes="Left at door",
-        timestamp=now - timedelta(days=2)
-    ))
-    db.add(OtpLog(
-        transaction_id=txn_strong, verified=True, ip_address="192.168.1.5",
-        timestamp=now - timedelta(days=5, minutes=2)
-    ))
-    db.add(CommunicationLog(
-        transaction_id=txn_strong, channel="email", message="Please cancel my subscription.",
-        has_attachments=False, timestamp=now - timedelta(days=1)
-    ))
-
-    # ---------------------------------------------------------
-    # Scenario 2: Weak Case / Review (Sparse - only payment)
-    # ---------------------------------------------------------
-    txn_weak = "DEMO_TXN_WEAK_1"
+    # 4. Strong: Duplicate charge (add extra payment record)
+    _add_strong(db, "DEMO_SCN_04", now, 45.00)
+    db.add(PaymentGatewayRecord(transaction_id="DEMO_SCN_04", amount=45.00, currency="USD", status="success", timestamp=now - timedelta(days=5, minutes=2)))
     
-    db.add(PaymentGatewayRecord(
-        transaction_id=txn_weak, amount=49.50, currency="USD", status="success",
-        timestamp=now - timedelta(days=3)
-    ))
-
-    # ---------------------------------------------------------
-    # Scenario 3: Human Review (Contradiction - "product not received" but delivered)
-    # ---------------------------------------------------------
-    txn_contradiction = "DEMO_TXN_REVIEW_1"
+    _add_weak(db, "DEMO_SCN_05", now, 120.00)
     
-    db.add(PaymentGatewayRecord(
-        transaction_id=txn_contradiction, amount=899.00, currency="USD", status="success",
-        timestamp=now - timedelta(days=10)
-    ))
-    db.add(DeliveryRecord(
-        transaction_id=txn_contradiction, tracking_number="TRK_REVIEW_1", status="delivered",
-        signed_by="Front Desk", address_match=True, notes="Signed by receptionist",
-        timestamp=now - timedelta(days=4)
-    ))
-
-    # ---------------------------------------------------------
-    # Scenario 4: Human Review (Insufficient / Empty)
-    # ---------------------------------------------------------
-    # We don't add any records for this ID.
-    txn_empty = "DEMO_TXN_EMPTY_1"
+    # 6. Weak: Missing comms
+    db.add(PaymentGatewayRecord(transaction_id="DEMO_SCN_06", amount=89.99, currency="USD", status="success", timestamp=now - timedelta(days=5)))
+    db.add(DeliveryRecord(transaction_id="DEMO_SCN_06", tracking_number="TRK_06", status="shipped", signed_by="", address_match=True, notes="In transit", timestamp=now - timedelta(days=1)))
     
+    _add_weak(db, "DEMO_SCN_07", now, 25.00)
     
-    # Add a few more variants to pad out the 30-40 cases requirement
-    for i in range(2, 10):
-        # Additional Strong cases
-        db.add(PaymentGatewayRecord(
-            transaction_id=f"DEMO_TXN_STRONG_{i}", amount=100.0+i, currency="USD", status="success",
-            timestamp=now - timedelta(days=i)
-        ))
-        db.add(CommunicationLog(
-            transaction_id=f"DEMO_TXN_STRONG_{i}", channel="chat", message="Item arrived broken.",
-            has_attachments=True, timestamp=now - timedelta(days=1)
-        ))
-        
-        # Additional Weak cases
-        db.add(PaymentGatewayRecord(
-            transaction_id=f"DEMO_TXN_WEAK_{i}", amount=20.0+i, currency="USD", status="success",
-            timestamp=now - timedelta(days=i)
-        ))
+    # 8. Weak: Partial evidence
+    db.add(PaymentGatewayRecord(transaction_id="DEMO_SCN_08", amount=150.00, currency="USD", status="success", timestamp=now - timedelta(days=5)))
+    db.add(OtpLog(transaction_id="DEMO_SCN_08", verified=False, ip_address="10.0.0.1", timestamp=now - timedelta(days=5)))
+    
+    _add_contradiction(db, "DEMO_SCN_09", now, 200.00, delivery_status="delivered", delivery_signed="Customer", comm_msg="I received this yesterday but it's broken.")
+    _add_contradiction(db, "DEMO_SCN_10", now, 850.00, delivery_status="delivered", delivery_signed="Front Desk")
+    
+    # 11. Contradiction: Refund status 
+    db.add(PaymentGatewayRecord(transaction_id="DEMO_SCN_11", amount=199.99, currency="USD", status="success", timestamp=now - timedelta(days=5)))
+    db.add(CommunicationLog(transaction_id="DEMO_SCN_11", channel="email", message="We have processed your refund.", has_attachments=False, timestamp=now - timedelta(days=1)))
+    
+    # 12. Contradiction: Multiple auth signals conflict
+    db.add(PaymentGatewayRecord(transaction_id="DEMO_SCN_12", amount=1100.00, currency="USD", status="success", timestamp=now - timedelta(days=5)))
+    db.add(OtpLog(transaction_id="DEMO_SCN_12", verified=True, ip_address="192.168.1.5", timestamp=now - timedelta(days=5)))
+    db.add(OtpLog(transaction_id="DEMO_SCN_12", verified=False, ip_address="203.0.113.42", timestamp=now - timedelta(days=5, minutes=10)))
+    
+    _add_empty(db, "DEMO_SCN_13", now, 45.00)
+    _add_empty(db, "DEMO_SCN_14", now, 14.99)
+    _add_empty(db, "DEMO_SCN_15", now, 75.00)
 
     db.commit()
     db.close()
     
-    print("Seed complete!")
-    print("\nHere are 4 known transaction IDs you can use for your live demo:")
-    print(f"1. Strong Case (Auto-Resolve)       -> {txn_strong}")
-    print(f"2. Weak Case (Sparse Evidence)      -> {txn_weak}")
-    print(f"3. Human Review (Contradiction)     -> {txn_contradiction}  (Use with reason 'product not received')")
-    print(f"4. Human Review (No Evidence Found) -> {txn_empty}")
+    print("Seed complete! Created DEMO_SCN_01 through DEMO_SCN_15.")
 
 if __name__ == "__main__":
     init_db()

@@ -1,7 +1,7 @@
 import type { Evidence } from '../types'
 
 interface Props {
-  /** 0–100 */
+  /** 0???100 */
   score: number | null
   /** Show a text label beside the bar */
   showLabel?: boolean
@@ -38,7 +38,7 @@ export default function CompletenessBar({ score, showLabel = true, showChecklist
             className="font-mono text-slate"
             style={{ fontSize: 12, minWidth: 32, textAlign: 'right' }}
           >
-            —
+            ???
           </span>
         )}
       </div>
@@ -102,7 +102,7 @@ export default function CompletenessBar({ score, showLabel = true, showChecklist
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, gap: 4, display: 'flex', flexDirection: 'column' }}>
               {available.map(item => (
                 <li key={item.id} className="font-body text-slate" style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ color: 'var(--color-teal)' }}>✓</span> {item.label}
+                  <span style={{ color: 'var(--color-teal)' }}>???</span> {item.label}
                 </li>
               ))}
               {available.length === 0 && <li className="font-body text-slate-light" style={{ fontSize: 13, fontStyle: 'italic' }}>None</li>}
@@ -113,7 +113,7 @@ export default function CompletenessBar({ score, showLabel = true, showChecklist
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, gap: 4, display: 'flex', flexDirection: 'column' }}>
               {missing.map(item => (
                 <li key={item.id} className="font-body text-slate" style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ color: 'var(--color-red)' }}>✗</span> {item.label}
+                  <span style={{ color: 'var(--color-red)' }}>???</span> {item.label}
                 </li>
               ))}
               {missing.length === 0 && <li className="font-body text-slate-light" style={{ fontSize: 13, fontStyle: 'italic' }}>None</li>}

@@ -43,16 +43,26 @@ def _hash_scenario(transaction_id: str) -> int:
     return int(digest[:8], 16) % 10
 
 
+def _get_base_demo_id(txn_id: str) -> str:
+    """Extracts base ID (e.g., DEMO_SCN_05) from DEMO_SCN_05_A1B2C3."""
+    if txn_id.startswith("DEMO_SCN_"):
+        parts = txn_id.split("_")
+        if len(parts) >= 3:
+            return f"{parts[0]}_{parts[1]}_{parts[2]}"
+    return txn_id
+
+
 def get_demo_expected_amount(db: Session, transaction_id: str) -> float | None:
     """
     Return the authoritative amount for a seeded demo transaction.
     Returns None if it is not a recognized seeded demo ID.
     """
-    if not transaction_id.startswith("DEMO_TXN_"):
+    base_id = _get_base_demo_id(transaction_id)
+    if not base_id.startswith("DEMO_"):
         return None
         
     # Check if it has a seeded payment record first
-    payment = db.query(PaymentGatewayRecord).filter_by(transaction_id=transaction_id).first()
+    payment = db.query(PaymentGatewayRecord).filter_by(transaction_id=base_id).first()
     if payment:
         return float(payment.amount)
         
@@ -83,10 +93,11 @@ def _add_evidence(db: Session, case, ev_type: str, source_id, content: dict,
 def _fetch_seeded(case, db: Session, base_date: datetime) -> int:
     """Query the 4 seeded external-system tables. Returns records created."""
     txn_id = case.transaction_id
+    base_id = _get_base_demo_id(txn_id)
     created = 0
 
     for rec in db.query(PaymentGatewayRecord).filter(
-        PaymentGatewayRecord.transaction_id == txn_id
+        PaymentGatewayRecord.transaction_id == base_id
     ).all():
         _add_evidence(db, case, "payment", txn_id,
                       {"amount": float(rec.amount), "currency": rec.currency,
@@ -95,7 +106,7 @@ def _fetch_seeded(case, db: Session, base_date: datetime) -> int:
         created += 1
 
     for rec in db.query(DeliveryRecord).filter(
-        DeliveryRecord.transaction_id == txn_id
+        DeliveryRecord.transaction_id == base_id
     ).all():
         _add_evidence(db, case, "delivery", rec.tracking_number,
                       {"status": rec.status, "signed_by": rec.signed_by,
@@ -104,7 +115,7 @@ def _fetch_seeded(case, db: Session, base_date: datetime) -> int:
         created += 1
 
     for rec in db.query(OtpLog).filter(
-        OtpLog.transaction_id == txn_id
+        OtpLog.transaction_id == base_id
     ).all():
         _add_evidence(db, case, "otp", None,
                       {"verified": rec.verified, "ip_address": rec.ip_address},
@@ -112,7 +123,7 @@ def _fetch_seeded(case, db: Session, base_date: datetime) -> int:
         created += 1
 
     for rec in db.query(CommunicationLog).filter(
-        CommunicationLog.transaction_id == txn_id
+        CommunicationLog.transaction_id == base_id
     ).all():
         _add_evidence(db, case, "communication", None,
                       {"channel": rec.channel, "message": rec.message,
@@ -207,7 +218,7 @@ def fetch_external_evidence(case, db: Session) -> int:
          so demos always produce varied, realistic outcomes.
     """
     # IDs that are intentionally seeded (or intentionally empty) — never fallback
-    SEEDED_ID_PREFIXES = ("DEMO_TXN_",)
+    SEEDED_ID_PREFIXES = ("DEMO_TXN_", "DEMO_SCN_")
 
     base_date = case.created_at or datetime.now(timezone.utc)
 

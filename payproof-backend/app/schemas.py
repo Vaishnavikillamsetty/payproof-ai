@@ -11,6 +11,11 @@ class CaseCreate(BaseModel):
     amount: float
 
 
+class HumanReviewRequest(BaseModel):
+    action: str
+    notes: str = ""
+
+
 class CaseResponse(BaseModel):
     id: UUID4
     transaction_id: str

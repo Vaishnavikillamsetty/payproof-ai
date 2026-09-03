@@ -26,6 +26,12 @@ export const api = {
   getCase: (id: string): Promise<CaseDetail> =>
     request(`/cases/${id}`),
 
+  reviewCase: (id: string, action: string, notes: string): Promise<CaseDetail> =>
+    request(`/cases/${id}/review`, {
+      method: 'POST',
+      body: JSON.stringify({ action, notes }),
+    }),
+
   getAudit: (id: string): Promise<AuditEntry[]> =>
     request(`/cases/${id}/audit`),
 

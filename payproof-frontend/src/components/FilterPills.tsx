@@ -17,7 +17,7 @@ const FILTERS: { label: string; value: FilterValue }[] = [
 ]
 
 /**
- * Filter pill row — lets the user narrow the case list by status.
+ * Filter pill row ??? lets the user narrow the case list by status.
  */
 export default function FilterPills({ active, onChange }: Props) {
   return (

@@ -53,18 +53,18 @@ export function aiRecommendationLabel(status: CaseStatus | string | null | undef
 
 /** Extract the AI final recommendation step from an audit log */
 export function getAIRecommendation(audit: AuditEntry[]): {
-  action: string
+  recommended_action: string
   confidence: number | null
   evidence_strength: string | null
   used_fallback: boolean
 } | null {
-  const recStep = audit.find(a => a.step === 'final_recommendation')
-  if (!recStep?.detail) return null
+  const recStep = audit.find(a => a.step === 'agent_recommendation_created')
+  if (!recStep) return null
   return {
-    action: (recStep.detail.action as string) ?? '',
-    confidence: (recStep.detail.confidence as number) ?? null,
-    evidence_strength: (recStep.detail.evidence_strength as string) ?? null,
-    used_fallback: !!(recStep.detail.used_fallback),
+    recommended_action: (recStep.detail?.recommended_action as string) ?? '',
+    confidence: (recStep.detail?.confidence as number) ?? null,
+    evidence_strength: (recStep.detail?.evidence_strength as string) ?? null,
+    used_fallback: recStep.detail?.ai_status === 'FALLBACK',
   }
 }
 

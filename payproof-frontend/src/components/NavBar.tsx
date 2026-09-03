@@ -6,7 +6,7 @@ interface Props {
 }
 
 /**
- * Top navigation bar — fixed, always visible.
+ * Top navigation bar ??? fixed, always visible.
  * IBM Plex Mono for the wordmark; Inter for sub-label.
  */
 export default function NavBar({ children, onNavMetrics }: Props) {

@@ -18,7 +18,7 @@ export default function VerdictStamp({ status, confidence, size = 'large' }: Pro
   let color = 'var(--color-slate)'
 
   if (status === 'strong_case') {
-    text = confidence !== null ? `VERIFIED · ${Math.round(confidence * 100)}%` : 'VERIFIED'
+    text = confidence !== null ? `VERIFIED ?? ${Math.round(confidence * 100)}%` : 'VERIFIED'
     color = 'var(--color-teal)'
   } else if (status === 'human_review') {
     text = 'HUMAN REVIEW'

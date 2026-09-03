@@ -17,7 +17,7 @@ type ViewState =
   | { type: 'metrics' }
 
 /**
- * App shell — minimal routing without a router library.
+ * App shell ??? minimal routing without a router library.
  */
 export default function App() {
   const [view, setView] = useState<ViewState>({ type: 'dashboard' })

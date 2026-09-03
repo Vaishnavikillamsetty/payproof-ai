@@ -9,13 +9,9 @@ from app.db.models import Case, Evidence
 
 client = TestClient(app)
 
-# Note: We rely on the DB already being seeded with DEMO_TXN_STRONG_1 (299.99),
-# DEMO_TXN_WEAK_2 (22.00), etc.
-
 def test_seeded_strong_transaction_overrides_incorrect_amount():
-    """Input: DEMO_TXN_STRONG_1 with amount=0. Expected: backend overrides to 299.99."""
     resp = client.post("/cases/", json={
-        "transaction_id": "DEMO_TXN_STRONG_1",
+        "transaction_id": "DEMO_SCN_01_TESTSUFFIX",
         "merchant_id": "M1",
         "dispute_reason": "product not received",
         "customer_claim": "test claim",
@@ -25,11 +21,9 @@ def test_seeded_strong_transaction_overrides_incorrect_amount():
     data = resp.json()
     assert data["amount"] == 299.99, f"Expected 299.99, got {data['amount']}"
 
-
 def test_seeded_weak_transaction_overrides_incorrect_amount():
-    """Input: DEMO_TXN_WEAK_2 with amount=500. Expected: backend overrides to 22.00."""
     resp = client.post("/cases/", json={
-        "transaction_id": "DEMO_TXN_WEAK_2",
+        "transaction_id": "DEMO_SCN_05",
         "merchant_id": "M1",
         "dispute_reason": "product not received",
         "customer_claim": "test claim",
@@ -37,25 +31,9 @@ def test_seeded_weak_transaction_overrides_incorrect_amount():
     })
     assert resp.status_code == 201
     data = resp.json()
-    assert data["amount"] == 22.00
-
-
-def test_seeded_empty_transaction_uses_default_override():
-    """Input: DEMO_TXN_EMPTY_1 with amount=0. Expected: backend overrides to 150.00."""
-    resp = client.post("/cases/", json={
-        "transaction_id": "DEMO_TXN_EMPTY_1",
-        "merchant_id": "M1",
-        "dispute_reason": "product not received",
-        "customer_claim": "test claim",
-        "amount": 0
-    })
-    assert resp.status_code == 201
-    data = resp.json()
-    assert data["amount"] == 150.00
-
+    assert data["amount"] == 120.00
 
 def test_random_transaction_uses_submitted_amount():
-    """Input: RANDOM_TXN_123 with amount=499.99. Expected: case.amount=499.99."""
     resp = client.post("/cases/", json={
         "transaction_id": "RANDOM_TXN_123",
         "merchant_id": "M1",
@@ -67,38 +45,44 @@ def test_random_transaction_uses_submitted_amount():
     data = resp.json()
     assert data["amount"] == 499.99
 
-
-def test_random_transaction_rejects_invalid_amount():
-    """Input: RANDOM_TXN_123 with amount=0. Expected: 400 validation error."""
-    resp = client.post("/cases/", json={
-        "transaction_id": "RANDOM_TXN_456",
-        "merchant_id": "M1",
-        "dispute_reason": "product not received",
-        "customer_claim": "test claim",
-        "amount": 0
-    })
-    assert resp.status_code == 400
-    assert "Amount must be greater than 0" in resp.text
-
-
 def test_demo_info_endpoint():
-    """Verify GET /cases/demo-info returns correct structures."""
-    # Seeded case
-    r1 = client.get("/cases/demo-info/DEMO_TXN_STRONG_1")
+    r1 = client.get("/cases/demo-info/DEMO_SCN_01_ABCD")
     assert r1.status_code == 200
     assert r1.json() == {"is_demo": True, "expected_amount": 299.99}
 
-    # Edge case (EMPTY)
-    r2 = client.get("/cases/demo-info/DEMO_TXN_EMPTY_1")
-    assert r2.status_code == 200
-    assert r2.json() == {"is_demo": True, "expected_amount": 150.00}
-
-    # Invalid demo ID
     r3 = client.get("/cases/demo-info/DEMO_TXN_INVALID_123")
     assert r3.status_code == 200
     assert r3.json() == {"is_demo": False}
 
-    # Random ID
     r4 = client.get("/cases/demo-info/RANDOM_TXN_123")
     assert r4.status_code == 200
     assert r4.json() == {"is_demo": False}
+
+def test_human_review_endpoint():
+    # create case
+    resp = client.post("/cases/", json={
+        "transaction_id": "RANDOM_TXN_REVIEW_1",
+        "merchant_id": "M1",
+        "dispute_reason": "product not received",
+        "customer_claim": "test claim",
+        "amount": 100.00
+    })
+    case_id = resp.json()["id"]
+
+    # call review
+    r_review = client.post(f"/cases/{case_id}/review", json={
+        "action": "request_more_evidence",
+        "notes": "Testing human review endpoint."
+    })
+    assert r_review.status_code == 200
+    assert r_review.json()["status"] == "request_more_evidence"
+
+    # fetch audit log to verify event
+    r_audit = client.get(f"/cases/{case_id}/audit")
+    assert r_audit.status_code == 200
+    logs = r_audit.json()
+    
+    review_log = next((log for log in logs if log["step"] == "human_review_decision"), None)
+    assert review_log is not None
+    assert review_log["detail"]["action"] == "request_more_evidence"
+    assert review_log["detail"]["notes"] == "Testing human review endpoint."

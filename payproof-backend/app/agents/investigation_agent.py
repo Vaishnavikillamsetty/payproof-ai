@@ -371,6 +371,14 @@ def investigate(
     """
     if settings.mock_verifier:
         logger.info("Using MOCK investigation agent for case %s", case_id)
+        # Record explicit mock mode event
+        from app.db.models import AuditLog
+        db.add(AuditLog(
+            case_id=case_id,
+            step="mock_investigation_mode",
+            detail={"info": "Rule-based investigation pipeline used for demonstration."}
+        ))
+        db.commit()
         return _mock_investigate(case_id, db, evidence_types, contradictions_found, completeness)
 
     try:

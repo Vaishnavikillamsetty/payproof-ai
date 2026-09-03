@@ -9,7 +9,7 @@ from app.db.models import AuditLog, Case, Evidence
 from app.db.session import get_db
 from app.agents.external_systems import get_demo_expected_amount
 from app.orchestrator import run_pipeline
-from app.schemas import AuditLogResponse, CaseCreate, CaseDetailResponse, CaseResponse
+from app.schemas import AuditLogResponse, CaseCreate, CaseDetailResponse, CaseResponse, HumanReviewRequest
 
 logger = logging.getLogger(__name__)
 
@@ -122,3 +122,36 @@ def get_audit(id: UUID, db: Session = Depends(get_db)):
         .order_by(AuditLog.timestamp)
         .all()
     )
+
+
+@router.post("/{id}/review", response_model=CaseDetailResponse)
+def review_case(id: UUID, req: HumanReviewRequest, db: Session = Depends(get_db)):
+    """
+    Record a human review decision without taking immediate financial action.
+    This sets the case status to reflect the decision.
+    """
+    case = db.query(Case).filter(Case.id == id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+    if req.action not in ["approve", "request_more_evidence", "escalate"]:
+        raise HTTPException(status_code=400, detail="Invalid action")
+
+    # Map the UI action to a valid case status
+    # Note: approve will resolve the case, request_more_evidence / escalate match the DB status enum
+    if req.action == "escalate":
+        case.status = "escalate"
+    elif req.action == "request_more_evidence":
+        case.status = "request_more_evidence"
+    elif req.action == "approve":
+        case.status = "resolved"
+
+    db.add(AuditLog(
+        case_id=case.id,
+        step="human_review_decision",
+        detail={"action": req.action, "notes": req.notes}
+    ))
+    db.commit()
+    db.refresh(case)
+    
+    return case
