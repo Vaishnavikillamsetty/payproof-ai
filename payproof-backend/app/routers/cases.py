@@ -9,6 +9,7 @@ from app.db.models import AuditLog, Case, Evidence
 from app.db.session import get_db
 from app.agents.external_systems import get_demo_expected_amount
 from app.orchestrator import run_pipeline
+from app.config import settings
 from app.schemas import AuditLogResponse, CaseCreate, CaseDetailResponse, CaseResponse, HumanReviewRequest
 
 logger = logging.getLogger(__name__)
@@ -162,6 +163,8 @@ def reset_demo_cases(db: Session = Depends(get_db)):
     Deletes all dynamically generated demo cases to provide a clean state.
     Does not delete real production cases.
     """
+    if settings.environment != "development" and not settings.demo_mode:
+        raise HTTPException(status_code=403, detail="Demo reset is disabled in this environment.")
     demo_cases = db.query(Case).filter(
         (Case.transaction_id.like("DEMO_TXN_%")) | 
         (Case.transaction_id.like("DEMO_SCN_%"))

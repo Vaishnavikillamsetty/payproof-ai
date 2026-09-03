@@ -222,6 +222,7 @@ export default function Dashboard({ onSelectCase }: Props) {
         }
       `}</style>
 
+      {(import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') && (
       <div style={{ textAlign: 'center', marginTop: 40, borderTop: '1px solid var(--color-ink-border)', paddingTop: 24 }}>
         <button 
           onClick={async () => {
@@ -236,6 +237,7 @@ export default function Dashboard({ onSelectCase }: Props) {
           RESET DEMO CASES
         </button>
       </div>
+      )}
     </main>
   )
 }
