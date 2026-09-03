@@ -1,169 +1,112 @@
-import { motion } from 'framer-motion'
-import type { Evidence } from '../types'
-import { formatDate, evidenceProvenance } from '../utils'
+﻿import type { Evidence } from '../types'
+import { formatDate } from '../utils'
 
 interface Props {
   evidenceList: Evidence[]
 }
 
-const PROVENANCE_CONFIG = {
-  razorpay: {
-    label: 'VERIFIED BY RAZORPAY',
-    icon: '???',
-    color: 'var(--color-teal)',
-    bg: 'rgba(63,167,150,0.08)',
-    border: 'rgba(63,167,150,0.25)',
-    dotColor: '#3FA796',
-  },
-  merchant: {
-    label: 'MERCHANT EVIDENCE',
-    icon: '???',
-    color: 'var(--color-amber)',
-    bg: 'rgba(224,163,57,0.08)',
-    border: 'rgba(224,163,57,0.25)',
-    dotColor: '#E0A339',
-  },
-  ai: {
-    label: 'AI ANALYSIS',
-    icon: '????',
-    color: 'var(--color-slate-light)',
-    bg: 'rgba(91,107,124,0.08)',
-    border: 'rgba(91,107,124,0.25)',
-    dotColor: '#5B6B7C',
-  },
-}
+export default function EvidencePanel({ evidenceList }: Props) {
+  const verified = evidenceList.filter(e => e.evidence_type === 'payment' || e.evidence_type === 'refund')
+  const merchant = evidenceList.filter(e => !['payment', 'refund', 'ai_analysis', 'contradiction', 'risk'].includes(e.evidence_type))
+  const aiAnalysis = evidenceList.filter(e => ['ai_analysis', 'contradiction', 'risk'].includes(e.evidence_type))
 
-function isDemo(e: Evidence): boolean {
-  const note = e.content?.note as string | undefined
-  return typeof note === 'string' && note.startsWith('[DEMO]')
-}
-
-function evidenceTypeLabel(evType: string): string {
-  return evType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-}
-
-function renderEvidenceFields(content: Record<string, unknown>) {
-  const skip = new Set(['note'])
-  const entries = Object.entries(content).filter(([k]) => !skip.has(k))
-  if (entries.length === 0) return null
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 24px', marginTop: 8 }}>
-      {entries.map(([key, val]) => (
-        <div key={key} style={{ minWidth: 120 }}>
-          <span className="font-mono" style={{ fontSize: 10, color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block' }}>{key.replace(/_/g, ' ')}</span>
-          <span className="font-mono" style={{ fontSize: 12, color: 'rgba(0,0,0,0.75)', fontWeight: 500 }}>
-            {typeof val === 'boolean' ? (val ? 'Yes' : 'No') : String(val ?? '???')}
-          </span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* VERIFIED SOURCE */}
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', background: 'rgba(63, 167, 150, 0.1)', borderBottom: '1px solid rgba(63, 167, 150, 0.2)' }}>
+          <h3 className="font-mono" style={{ margin: 0, fontSize: 13, color: 'var(--color-teal)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>✓</span> VERIFIED SOURCE
+          </h3>
+          <p className="font-body" style={{ margin: '4px 0 0 0', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
+            Immutable records from the payment gateway.
+          </p>
         </div>
-      ))}
+        <div style={{ padding: '0 20px' }}>
+          {verified.length === 0 ? (
+            <p className="font-body text-slate" style={{ fontStyle: 'italic', fontSize: 13, margin: '20px 0' }}>No verified records found.</p>
+          ) : (
+            verified.map(e => <EvidenceItem key={e.id} e={e} />)
+          )}
+        </div>
+      </div>
+
+      {/* MERCHANT EVIDENCE */}
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', background: 'rgba(224, 163, 57, 0.1)', borderBottom: '1px solid rgba(224, 163, 57, 0.2)' }}>
+          <h3 className="font-mono" style={{ margin: 0, fontSize: 13, color: 'var(--color-amber)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>◐</span> MERCHANT EVIDENCE
+          </h3>
+          <p className="font-body" style={{ margin: '4px 0 0 0', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
+            Information provided by the merchant (delivery, OTP, comms).
+          </p>
+        </div>
+        <div style={{ padding: '0 20px' }}>
+          {merchant.length === 0 ? (
+            <p className="font-body text-slate" style={{ fontStyle: 'italic', fontSize: 13, margin: '20px 0' }}>No merchant evidence provided.</p>
+          ) : (
+            merchant.map(e => <EvidenceItem key={e.id} e={e} />)
+          )}
+        </div>
+      </div>
+
+      {/* AI ANALYSIS */}
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', background: 'rgba(91, 107, 124, 0.1)', borderBottom: '1px solid rgba(91, 107, 124, 0.2)' }}>
+          <h3 className="font-mono" style={{ margin: 0, fontSize: 13, color: 'var(--color-slate-light)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>🤖</span> AI ANALYSIS
+          </h3>
+          <p className="font-body" style={{ margin: '4px 0 0 0', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
+            System-generated findings and risk assessments.
+          </p>
+        </div>
+        <div style={{ padding: '0 20px' }}>
+          {aiAnalysis.length === 0 ? (
+            <p className="font-body text-slate" style={{ fontStyle: 'italic', fontSize: 13, margin: '20px 0' }}>No AI records generated for this case.</p>
+          ) : (
+            aiAnalysis.map(e => <EvidenceItem key={e.id} e={e} />)
+          )}
+        </div>
+      </div>
     </div>
   )
 }
 
-export default function EvidencePanel({ evidenceList }: Props) {
-  const hasDemo = evidenceList.some(isDemo)
-
-  // Group by provenance
-  const groups: Record<'razorpay' | 'merchant' | 'ai', Evidence[]> = { razorpay: [], merchant: [], ai: [] }
-  for (const e of evidenceList) {
-    groups[evidenceProvenance(e.evidence_type)].push(e)
-  }
-
-  const orderedTiers: ('razorpay' | 'merchant' | 'ai')[] = ['razorpay', 'merchant', 'ai']
+function EvidenceItem({ e }: { e: Evidence }) {
+  const isDemo = e.content?.note?.toString().startsWith('[DEMO]')
+  const skip = new Set(['note'])
+  const entries = Object.entries(e.content).filter(([k]) => !skip.has(k))
 
   return (
-    <div>
-      {hasDemo && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          background: 'rgba(91,107,124,0.12)', border: '1px solid var(--color-ink-border)',
-          borderRadius: 4, padding: '8px 12px', marginBottom: 20,
-        }}>
-          <span style={{ fontSize: 13 }}>??????</span>
-          <span className="font-mono text-slate" style={{ fontSize: 11, letterSpacing: '0.04em' }}>
-            DEMO DATA ??? evidence retrieved from seeded demo records simulating payment gateway, courier, OTP, and communication systems.
+    <div style={{ padding: '20px 0', borderBottom: '1px solid var(--color-ink-border)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span className="font-mono" style={{ fontSize: 14, color: 'var(--color-white)', fontWeight: 600, textTransform: 'uppercase' }}>
+            {e.evidence_type.replace(/_/g, ' ')}
           </span>
+          {isDemo && (
+             <span className="badge" style={{ background: 'var(--color-ink-light)', color: 'var(--color-slate-light)', border: '1px solid var(--color-ink-border)', fontSize: 10 }}>
+               DEMO
+             </span>
+          )}
         </div>
-      )}
+        <span className="font-mono text-slate" style={{ fontSize: 11 }}>
+          {formatDate(e.collected_at)}
+        </span>
+      </div>
 
-      {evidenceList.length === 0 && (
-        <div style={{ padding: '24px 0', textAlign: 'center' }}>
-          <div className="font-mono text-slate" style={{ fontSize: 13 }}>??? MISSING INFORMATION</div>
-          <div className="font-body text-slate" style={{ fontSize: 14, marginTop: 8, fontStyle: 'italic' }}>
-            No evidence was collected for this case. Investigation may require manual evidence submission.
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
+        {entries.map(([key, val]) => (
+          <div key={key}>
+            <span className="font-mono text-slate" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 4 }}>
+              {key.replace(/_/g, ' ')}
+            </span>
+            <span className="font-mono" style={{ fontSize: 13, color: 'var(--color-white)' }}>
+              {typeof val === 'boolean' ? (val ? 'Yes' : 'No') : String(val ?? '—')}
+            </span>
           </div>
-        </div>
-      )}
-
-      {orderedTiers.map(tier => {
-        const items = groups[tier]
-        if (items.length === 0) return null
-        const cfg = PROVENANCE_CONFIG[tier]
-        return (
-          <div key={tier} style={{ marginBottom: 24 }}>
-            {/* Tier header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <span style={{ fontSize: 13 }}>{cfg.icon}</span>
-              <span
-                className="font-mono"
-                style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: cfg.color, textTransform: 'uppercase' }}
-              >
-                {cfg.label}
-              </span>
-              <div style={{ flex: 1, height: 1, background: cfg.border }} />
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {items.map((e, i) => (
-                <motion.div
-                  key={e.id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.06, duration: 0.25, ease: 'easeOut' }}
-                  style={{
-                    background: cfg.bg,
-                    border: `1px solid ${cfg.border}`,
-                    borderRadius: 6,
-                    padding: '14px 18px',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                    <div>
-                      <span
-                        className="font-mono"
-                        style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-ink)', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                      >
-                        {evidenceTypeLabel(e.evidence_type)}
-                      </span>
-                      <div style={{ display: 'flex', gap: 8, marginTop: 3 }}>
-                        {isDemo(e) && (
-                          <span
-                            className="font-mono"
-                            style={{ fontSize: 9, padding: '1px 5px', background: 'rgba(0,0,0,0.08)', borderRadius: 2, color: 'rgba(0,0,0,0.4)', letterSpacing: '0.06em' }}
-                          >
-                            DEMO
-                          </span>
-                        )}
-                        {e.source_id && (
-                          <span className="font-mono" style={{ fontSize: 9, color: 'rgba(0,0,0,0.4)' }}>
-                            {e.source_id}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {e.event_timestamp && (
-                      <span className="font-mono" style={{ fontSize: 10, color: 'rgba(0,0,0,0.4)', whiteSpace: 'nowrap' }}>
-                        {formatDate(e.event_timestamp)}
-                      </span>
-                    )}
-                  </div>
-                  {renderEvidenceFields(e.content as Record<string, unknown>)}
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        )
-      })}
+        ))}
+      </div>
     </div>
   )
 }

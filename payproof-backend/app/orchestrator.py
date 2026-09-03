@@ -247,6 +247,50 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
         })
 
         # ------------------------------------------------------------------ #
+        # Step 6.5: Fill claim verdicts deterministically                     #
+        # This runs for both mock and real AI modes. It assigns verdicts      #
+        # based on the recommendation output so the Claims UI is never empty. #
+        # ------------------------------------------------------------------ #
+        claims_in_db = db.query(Claim).filter(Claim.case_id == case_id).all()
+        for claim in claims_in_db:
+            text = claim.claim_text.lower()
+            if contradictions_found:
+                # Delivery-related claims contradict "not received" customer claims
+                if any(kw in text for kw in ["delivery", "signed", "'delivered'"]):
+                    claim.verdict = "contradicted"
+                    claim.confidence = 0.78
+                    ev = [e for e in evidence_list if e.evidence_type == "delivery"]
+                    claim.supporting_evidence_ids = []
+                    claim.contradicting_evidence_ids = [str(e.id) for e in ev]
+                elif any(kw in text for kw in ["payment", "amount", "charged"]):
+                    claim.verdict = "supported"
+                    claim.confidence = 0.88
+                    ev = [e for e in evidence_list if e.evidence_type == "payment"]
+                    claim.supporting_evidence_ids = [str(e.id) for e in ev]
+                elif any(kw in text for kw in ["otp", "verified", "auth"]):
+                    claim.verdict = "contradicted"
+                    claim.confidence = 0.72
+                else:
+                    claim.verdict = "unverifiable"
+                    claim.confidence = 0.40
+            elif score >= 50:
+                # Strong evidence: most claims are supported
+                claim.verdict = "supported"
+                claim.confidence = min(0.95, recommendation.confidence + 0.05)
+                ev = [e for e in evidence_list if e.evidence_type == "payment"]
+                claim.supporting_evidence_ids = [str(e.id) for e in ev]
+            else:
+                # Insufficient evidence
+                claim.verdict = "unverifiable"
+                claim.confidence = min(0.55, recommendation.confidence)
+        db.commit()
+
+        _audit(db, case_id, "claims_verified", {
+            "method": "deterministic_post_investigation",
+            "claims_updated": len(claims_in_db),
+        })
+
+        # ------------------------------------------------------------------ #
         # Update case with final scores                                       #
         # ------------------------------------------------------------------ #
         case.status = status
