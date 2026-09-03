@@ -38,7 +38,7 @@ export default function AgentActivity({ audit }: Props) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 16 }}>??</span>
+          <span style={{ fontSize: 16 }}>🤖</span>
           <div style={{ textAlign: 'left' }}>
             <div className="font-mono" style={{ fontSize: 13, color: 'var(--color-white)', fontWeight: 600, letterSpacing: '0.05em' }}>
               AI INVESTIGATION
@@ -47,7 +47,7 @@ export default function AgentActivity({ audit }: Props) {
               {isMock ? (
                 <span style={{ color: 'var(--color-teal)' }}>DEMO RULE-BASED INVESTIGATION</span>
               ) : usedFallback ? (
-                <span style={{ color: 'var(--color-amber)' }}>? DETERMINISTIC FALLBACK</span>
+                <span style={{ color: 'var(--color-amber)' }}>⚠ DETERMINISTIC FALLBACK</span>
               ) : (
                 <span style={{ color: 'var(--color-teal)' }}>AI AGENT INVESTIGATION</span>
               )}
@@ -67,16 +67,16 @@ export default function AgentActivity({ audit }: Props) {
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ color: 'var(--color-teal)' }}>?</span><span className="font-mono text-white" style={{ fontSize: 12 }}>Case analyzed</span>
+                  <span style={{ color: 'var(--color-teal)' }}>✓</span><span className="font-mono text-white" style={{ fontSize: 12 }}>Case analyzed</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ color: 'var(--color-teal)' }}>?</span><span className="font-mono text-white" style={{ fontSize: 12 }}>Evidence collected</span>
+                  <span style={{ color: 'var(--color-teal)' }}>✓</span><span className="font-mono text-white" style={{ fontSize: 12 }}>Evidence collected</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ color: 'var(--color-teal)' }}>?</span><span className="font-mono text-white" style={{ fontSize: 12 }}>Claims compared</span>
+                  <span style={{ color: 'var(--color-teal)' }}>✓</span><span className="font-mono text-white" style={{ fontSize: 12 }}>Claims compared</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ color: 'var(--color-teal)' }}>?</span><span className="font-mono text-white" style={{ fontSize: 12 }}>Decision policy applied</span>
+                  <span style={{ color: 'var(--color-teal)' }}>✓</span><span className="font-mono text-white" style={{ fontSize: 12 }}>Decision policy applied</span>
                 </div>
               </div>
             </div>
@@ -101,7 +101,7 @@ export default function AgentActivity({ audit }: Props) {
                             {TOOL_LABEL[tc.tool] ?? tc.tool}
                           </span>
                           <span className="font-mono" style={{ fontSize: 11, color: 'var(--color-teal)', display: 'block', marginTop: 4 }}>
-                            ? Completed
+                            ✓ Completed
                           </span>
                         </div>
                       </div>
@@ -118,7 +118,7 @@ export default function AgentActivity({ audit }: Props) {
               padding: '12px 16px', borderRadius: 6,
               background: 'rgba(63,167,150,0.08)', border: '1px solid rgba(63,167,150,0.2)',
             }}>
-              <span style={{ fontSize: 16 }}>??</span>
+              <span style={{ fontSize: 16 }}>🤖</span>
               <div>
                 <span className="font-mono" style={{ fontSize: 13, color: 'var(--color-teal)', fontWeight: 600 }}>
                   RECOMMENDATION GENERATED

@@ -27,7 +27,7 @@ export default function Metrics() {
   if (loading) {
     return (
       <div style={{ padding: 60, textAlign: 'center', color: 'var(--color-slate)' }}>
-        <div style={{ animation: 'spin 1s linear infinite', display: 'inline-block', marginBottom: 16 }}>???</div>
+        <div style={{ animation: 'spin 1s linear infinite', display: 'inline-block', marginBottom: 16 }}>◒</div>
         <div className="font-body">Loading evaluation metrics...</div>
       </div>
     )
@@ -61,6 +61,7 @@ export default function Metrics() {
         <p className="font-body text-white" style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.2 }}>
           Performance Metrics
         </p>
+        <p className="font-body text-amber" style={{ fontSize: 13, marginTop: 12, padding: "8px 12px", background: "rgba(224, 163, 57, 0.1)", borderRadius: 4, display: "inline-block" }}>Note: Metrics are computed from a fixed synthetic evaluation dataset and are NOT derived from live submitted cases.</p>
       </div>
 
       {/* Explanation Block */}
@@ -72,7 +73,7 @@ export default function Metrics() {
           <li><strong style={{ color: 'var(--color-red)' }}>Unsafe Resolve (Failure):</strong> An ambiguous case dangerously auto-resolved (our worst failure type).</li>
         </ul>
         <p className="font-body text-white" style={{ fontSize: 14, fontStyle: 'italic', margin: 0, padding: '16px 0 0 0', borderTop: '1px solid var(--color-ink-border)' }}>
-          This system prioritizes safety over automation efficiency ??? {cm.false_negatives} unsafe resolves, with {cm.false_positives} unnecessary human reviews as the current tradeoff. Policy tuning is the next optimization target.
+          This system prioritizes safety over automation efficiency — {cm.false_negatives} unsafe resolves, with {cm.false_positives} unnecessary human reviews as the current tradeoff. Policy tuning is the next optimization target.
         </p>
       </div>
 
@@ -162,7 +163,7 @@ export default function Metrics() {
       {/* Benchmark Note */}
       <div style={{ marginTop: 24, textAlign: 'center' }}>
         <p className="font-body text-slate-light" style={{ fontSize: 12 }}>
-          * Benchmark metrics ??? computed from a fixed 30-case evaluation set, separate from live cases you submit here.
+          * Benchmark metrics are computed from a fixed 30-case evaluation set, separate from live cases you submit here.
         </p>
       </div>
     </main>

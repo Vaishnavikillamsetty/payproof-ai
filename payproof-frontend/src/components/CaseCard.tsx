@@ -29,7 +29,7 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
   const confidence =
     c.overall_confidence !== null && c.overall_confidence !== undefined
       ? `${Math.round(c.overall_confidence * 100)}%`
-      : '???'
+      : '--'
 
   return (
     <motion.div
@@ -41,7 +41,7 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
       role="button"
       tabIndex={0}
       id={`case-card-${c.id}`}
-      aria-label={`Case ${c.transaction_id} ??? ${formatDisputeReason(c.dispute_reason)}, AI recommendation: ${rec}`}
+      aria-label={`Case ${c.transaction_id} - ${formatDisputeReason(c.dispute_reason)}, AI recommendation: ${rec}`}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(c.id) }}
     >
       <div
@@ -56,7 +56,7 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
           ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--color-ink-border)'
         }}
       >
-        {/* ?????? Col 1: Identity ?????? */}
+        {/* ---- Col 1: Identity ---- */}
         <div style={{ minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
             <div
@@ -86,7 +86,7 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
           </div>
         </div>
 
-        {/* ?????? Col 2: Completeness ?????? */}
+        {/* ---- Col 2: Completeness ---- */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
             <span className="font-body text-slate" style={{ fontSize: 10 }}>Evidence Strength</span>
@@ -107,7 +107,7 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
           />
         </div>
 
-        {/* ?????? Col 3: Lifecycle status ?????? */}
+        {/* ---- Col 3: Lifecycle status ---- */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
           <span className="font-mono text-slate" style={{ fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Lifecycle</span>
           <span
@@ -119,7 +119,7 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
           <span className="font-mono text-slate" style={{ fontSize: 10 }}>{formatDate(c.created_at)}</span>
         </div>
 
-        {/* ?????? Col 4: AI Recommendation ?????? */}
+        {/* ---- Col 4: AI Recommendation ---- */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
           <span className="font-mono text-slate" style={{ fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase' }}>AI Recommendation</span>
           <span
@@ -130,7 +130,7 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
           </span>
         </div>
 
-        {/* ?????? Col 5: Chevron ?????? */}
+        {/* ---- Col 5: Chevron ---- */}
         <div className="flex justify-end md:justify-center w-full mt-2 md:mt-0">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M6 4l4 4-4 4" stroke="var(--color-slate)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />

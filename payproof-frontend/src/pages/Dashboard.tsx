@@ -13,7 +13,7 @@ interface Props {
 }
 
 /**
- * Dashboard ??? the case list page.
+ * Dashboard - the case list page.
  *
  * Shows the summary strip, filter pills, then an animated stack of CaseCards.
  * Polls every 8s so newly submitted cases (which process in background) appear.
@@ -129,7 +129,7 @@ export default function Dashboard({ onSelectCase }: Props) {
           style={{ padding: '18px 22px', marginBottom: 16 }}
         >
           <span className="font-mono text-red" style={{ fontSize: 13 }}>
-            ??? Could not reach the backend: {error}
+            Error: Could not reach the backend: {error}
           </span>
           <div className="font-body text-slate" style={{ fontSize: 13, marginTop: 6 }}>
             Make sure{' '}
@@ -161,7 +161,7 @@ export default function Dashboard({ onSelectCase }: Props) {
             className="font-mono"
             style={{ fontSize: 32, marginBottom: 12, opacity: 0.3 }}
           >
-            ???
+            (empty)
           </div>
           <p className="font-body" style={{ fontSize: 15 }}>
             {filter === 'all'
@@ -185,7 +185,7 @@ export default function Dashboard({ onSelectCase }: Props) {
         </AnimatePresence>
       )}
 
-      {/* Live indicator ??? shows when polling is active */}
+      {/* Live indicator shows when polling is active */}
       {!loading && !error && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -210,7 +210,7 @@ export default function Dashboard({ onSelectCase }: Props) {
             }}
           />
           <span className="font-mono text-slate" style={{ fontSize: 11, letterSpacing: '0.06em' }}>
-            LIVE ?? refreshes every 8s
+            LIVE refreshes every 8s
           </span>
         </motion.div>
       )}
@@ -221,6 +221,21 @@ export default function Dashboard({ onSelectCase }: Props) {
           50% { opacity: 0.3; }
         }
       `}</style>
+
+      <div style={{ textAlign: 'center', marginTop: 40, borderTop: '1px solid var(--color-ink-border)', paddingTop: 24 }}>
+        <button 
+          onClick={async () => {
+            if (window.confirm("Are you sure you want to delete all demo cases? This will clear the dashboard.")) {
+              await api.resetDemoCases();
+              window.location.reload();
+            }
+          }}
+          className="font-mono text-slate" 
+          style={{ fontSize: 11, background: 'transparent', border: '1px solid var(--color-ink-border)', padding: '6px 12px', borderRadius: 4, cursor: 'pointer' }}
+        >
+          RESET DEMO CASES
+        </button>
+      </div>
     </main>
   )
 }

@@ -26,6 +26,9 @@ export const api = {
   getCase: (id: string): Promise<CaseDetail> =>
     request(`/cases/${id}`),
 
+  resetDemoCases: async (): Promise<any> =>
+    request('/cases/demo-reset', { method: 'DELETE' }),
+
   reviewCase: (id: string, action: string, notes: string): Promise<CaseDetail> =>
     request(`/cases/${id}/review`, {
       method: 'POST',
