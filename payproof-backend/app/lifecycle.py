@@ -3,29 +3,27 @@
 from typing import Optional
 
 
-_RECOMMENDATION_LIFECYCLES = {
+_FOLLOW_UP_LIFECYCLES = {
     "escalate": "escalated",
     "request_more_evidence": "evidence_requested",
-    # The current investigation agent uses ACCEPT/CONTEST; support the
-    # equivalent APPROVE/REJECT values as well for API compatibility.
-    "approve": "resolved",
-    "reject": "resolved",
-    "accept": "resolved",
-    "contest": "resolved",
 }
 
 
-def lifecycle_for_recommendation(recommendation: Optional[str], fallback: str) -> str:
-    """Return the lifecycle implied by an AI recommendation."""
+def lifecycle_for_recommendation(recommendation: Optional[str], fallback: str = "pending_review") -> str:
+    """Return the pre-review lifecycle implied by an AI recommendation.
+
+    A recommendation is not a final decision. Only recommendations that
+    inherently require a follow-up state leave the generic pending-review
+    lifecycle before a reviewer records their final action.
+    """
     normalized = (recommendation or "").strip().lower()
-    return _RECOMMENDATION_LIFECYCLES.get(normalized, fallback)
+    return _FOLLOW_UP_LIFECYCLES.get(normalized, fallback)
 
 
 def lifecycle_after_human_review(recommendation: Optional[str], action: str) -> str:
     """Apply a human workflow action without discarding the AI recommendation."""
-    implied = lifecycle_for_recommendation(recommendation, "")
-    if implied:
-        return implied
+    if (recommendation or "").strip().lower() == "escalate":
+        return "escalated"
     return {
         "approve": "resolved",
         "request_more_evidence": "evidence_requested",

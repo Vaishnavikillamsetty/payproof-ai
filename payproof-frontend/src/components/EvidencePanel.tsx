@@ -1,5 +1,5 @@
 ﻿import type { Evidence } from '../types'
-import { formatDate } from '../utils'
+import { formatAmount, formatDate } from '../utils'
 
 interface Props {
   evidenceList: Evidence[]
@@ -104,6 +104,7 @@ export default function EvidencePanel({ evidenceList, audit = [] }: Props) {
 function EvidenceItem({ e }: { e: Evidence }) {
   const isDemo = e.content?.note?.toString().startsWith('[DEMO]')
   const skip = new Set(['note'])
+  if (e.evidence_type === 'payment' && e.content.currency) skip.add('currency')
   const entries = Object.entries(e.content).filter(([k]) => !skip.has(k))
 
   return (
@@ -131,7 +132,11 @@ function EvidenceItem({ e }: { e: Evidence }) {
               {key.replace(/_/g, ' ')}
             </span>
             <span className="font-mono" style={{ fontSize: 13, color: 'var(--color-white)' }}>
-              {typeof val === 'boolean' ? (val ? 'Yes' : 'No') : String(val ?? '—')}
+              {typeof val === 'boolean'
+                ? (val ? 'Yes' : 'No')
+                : (e.evidence_type === 'payment' && key === 'amount'
+                  ? formatAmount(Number(val), String(e.content.currency ?? ''))
+                  : String(val ?? '—'))}
             </span>
           </div>
         ))}

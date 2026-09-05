@@ -37,6 +37,23 @@ def test_seeded_weak_transaction_overrides_incorrect_amount():
     assert data["amount"] == 120.00
 
 
+def test_case_currency_matches_verified_payment_evidence():
+    resp = client.post("/cases/", json={
+        "transaction_id": "DEMO_SCN_11_CURRENCY_CHECK",
+        "merchant_id": "M1",
+        "dispute_reason": "duplicate charge",
+        "customer_claim": "test claim",
+        "amount": 0,
+    })
+    assert resp.status_code == 201
+    case_id = resp.json()["id"]
+
+    detail = client.get(f"/cases/{case_id}").json()
+    payment = next(e for e in detail["evidence"] if e["evidence_type"] == "payment")
+    assert detail["currency"] == payment["content"]["currency"] == "USD"
+    assert detail["amount"] == payment["content"]["amount"] == 199.99
+
+
 def test_random_transaction_uses_submitted_amount():
     resp = client.post("/cases/", json={
         "transaction_id": "RANDOM_TXN_123",
@@ -141,7 +158,7 @@ def test_human_review_approve():
     assert r.status_code == 200
     assert r.json()["ai_recommendation"] == "ESCALATE"
     assert r.json()["status"] == "escalated"
-    assert r.json()["final_action"] == "approve"
+    assert r.json()["final_action"] == "ESCALATE"
 
 def test_human_review_escalate():
     resp = client.post("/cases/", json={

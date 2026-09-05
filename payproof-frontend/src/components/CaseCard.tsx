@@ -21,7 +21,7 @@ const REC_COLORS: Record<string, string> = {
 
 export default function CaseCard({ case_: c, index, onSelect }: Props) {
   const shouldReduceMotion = useReducedMotion()
-  const lifecycle = lifecycleStatus(c.status, c.ai_recommendation)
+  const lifecycle = lifecycleStatus(c.status, c.ai_recommendation, c.final_action)
   const theme = statusTheme(lifecycle)
   const rec = c.ai_recommendation ? aiRecommendationLabel(c.ai_recommendation) : '-'
   const recColor = c.ai_recommendation ? (REC_COLORS[rec] ?? 'var(--color-slate)') : 'var(--color-slate)'

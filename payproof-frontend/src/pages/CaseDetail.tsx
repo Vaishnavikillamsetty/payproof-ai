@@ -64,7 +64,8 @@ function AiRecommendationCard({ c, audit }: { c: CaseDetailType, audit: AuditEnt
 
   // If the backend has a specific ai_recommendation, use it. Otherwise fall back to aiRec or status.
   const recStr = c.ai_recommendation || aiRec?.recommended_action || c.status
-  const lifecycle = lifecycleStatus(c.status, c.ai_recommendation)
+  const hasReview = audit.some(a => a.step === 'human_review_decision')
+  const lifecycle = lifecycleStatus(c.status, c.ai_recommendation, hasReview ? c.final_action : null)
   const recLabel = aiRecommendationLabel(recStr)
   const recColor = (recStr === 'contest' || recStr === 'strong_case') ? 'var(--color-teal)' :
                    (recStr === 'request_more_evidence' || recStr === 'weak_case') ? 'var(--color-amber)' :
@@ -74,10 +75,10 @@ function AiRecommendationCard({ c, audit }: { c: CaseDetailType, audit: AuditEnt
   if (isMock) modeLabel = 'DEMO RULE-BASED INVESTIGATION'
   else if (usedFallback) modeLabel = '⚠ DETERMINISTIC FALLBACK'
   
-  const hasReview = !!c.final_action
-  const finalActionColor = (c.final_action === 'contest' || c.final_action === 'strong_case') ? 'var(--color-teal)' :
-                   (c.final_action === 'request_more_evidence' || c.final_action === 'weak_case') ? 'var(--color-amber)' :
-                   (c.final_action === 'escalate' || c.final_action === 'human_review') ? 'var(--color-red)' : 'var(--color-slate)'
+  const finalAction = c.final_action?.toLowerCase()
+  const finalActionColor = (finalAction === 'contest' || finalAction === 'accept' || finalAction === 'strong_case') ? 'var(--color-teal)' :
+                   (finalAction === 'request_more_evidence' || finalAction === 'weak_case') ? 'var(--color-amber)' :
+                   (finalAction === 'escalate' || finalAction === 'human_review') ? 'var(--color-red)' : 'var(--color-slate)'
 
   return (
     <div className="card" style={{ padding: '24px', marginBottom: 24, borderTop: `4px solid ${recColor}` }}>
@@ -120,6 +121,10 @@ function AiRecommendationCard({ c, audit }: { c: CaseDetailType, audit: AuditEnt
           <div style={{ marginBottom: 16 }}>
             <div className="font-mono text-slate" style={{ fontSize: 11, letterSpacing: '0.05em', marginBottom: 4 }}>LIFECYCLE</div>
             <div className="font-mono" style={{ fontSize: 14, color: statusTheme(lifecycle).dot, fontWeight: 600 }}>{lifecycle.toUpperCase().replace(/_/g, ' ')}</div>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <div className="font-mono text-slate" style={{ fontSize: 11, letterSpacing: '0.05em', marginBottom: 4 }}>FINAL ACTION</div>
+            <div className="font-mono text-slate" style={{ fontSize: 14 }}>Not yet decided</div>
           </div>
           <div className="font-mono text-slate" style={{ fontSize: 11, marginBottom: 8 }}>BASED ON:</div>
           <ul className="font-body" style={{ margin: 0, paddingLeft: 20, color: 'var(--color-slate-light)', fontSize: 13, lineHeight: 1.6 }}>

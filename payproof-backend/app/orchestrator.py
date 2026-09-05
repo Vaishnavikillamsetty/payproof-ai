@@ -237,10 +237,7 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
         # ------------------------------------------------------------------ #
         avg_confidence = recommendation.confidence
         policy_status, reason = policy_decision(score, avg_confidence, contradictions_found)
-        status = lifecycle_for_recommendation(
-            recommendation.recommended_action.value,
-            policy_status,
-        )
+        status = lifecycle_for_recommendation(recommendation.recommended_action.value)
 
         _audit(db, case_id, "policy_decision", {
             "status": status,
@@ -301,6 +298,12 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
         # ------------------------------------------------------------------ #
         case.status = status
         case.ai_recommendation = recommendation.recommended_action.value
+        payment_evidence = next((e for e in evidence_list if e.evidence_type == "payment"), None)
+        if payment_evidence:
+            payment_currency = payment_evidence.content.get("currency")
+            if isinstance(payment_currency, str) and payment_currency.strip():
+                # Payment evidence is authoritative for the transaction currency.
+                case.currency = payment_currency.strip().upper()
         case.contradiction_detected = contradictions_found
         case.completeness_score = score
         case.overall_confidence = round(avg_confidence, 4)

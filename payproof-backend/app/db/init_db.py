@@ -27,22 +27,28 @@ def init_db():
                 conn.execute(text("ALTER TABLE cases ADD CONSTRAINT uq_cases_external_dispute_id UNIQUE (external_dispute_id)"))
                 conn.execute(text("CREATE INDEX ix_cases_external_dispute_id ON cases (external_dispute_id)"))
 
-            # Idempotent lifecycle backfill for cases created before the AI
-            # recommendation and workflow state were kept separate.
             conn.execute(text("""
-                UPDATE cases
-                SET status = CASE LOWER(ai_recommendation)
+                UPDATE cases AS c
+                SET currency = UPPER(payment.content->>'currency')
+                FROM evidence AS payment
+                WHERE payment.case_id = c.id
+                  AND payment.evidence_type = 'payment'
+                  AND COALESCE(payment.content->>'currency', '') <> ''
+            """))
+
+            # An unreviewed recommendation is not a final resolution.
+            conn.execute(text("""
+                UPDATE cases AS c
+                SET status = CASE LOWER(c.ai_recommendation)
                     WHEN 'escalate' THEN 'escalated'
                     WHEN 'request_more_evidence' THEN 'evidence_requested'
-                    WHEN 'approve' THEN 'resolved'
-                    WHEN 'reject' THEN 'resolved'
-                    WHEN 'accept' THEN 'resolved'
-                    WHEN 'contest' THEN 'resolved'
-                    ELSE status
+                    ELSE 'pending_review'
                 END
-                WHERE LOWER(ai_recommendation) IN (
-                    'escalate', 'request_more_evidence', 'approve', 'reject', 'accept', 'contest'
-                )
+                WHERE c.ai_recommendation IS NOT NULL
+                  AND NOT EXISTS (
+                    SELECT 1 FROM audit_log AS a
+                    WHERE a.case_id = c.id AND a.step = 'human_review_decision'
+                  )
             """))
                 
     except Exception as e:

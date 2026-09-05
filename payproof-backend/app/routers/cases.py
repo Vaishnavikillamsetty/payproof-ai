@@ -38,7 +38,7 @@ def create_case(
     from app.agents.external_systems import _get_base_demo_id
     base_id = _get_base_demo_id(case_in.transaction_id)
     pmt = db.query(PaymentGatewayRecord).filter_by(transaction_id=base_id).first()
-    final_currency = pmt.currency if pmt else "INR"
+    final_currency = pmt.currency if pmt else "UNKNOWN"
     if demo_amount is not None:
         final_amount = demo_amount
     else:
@@ -149,7 +149,7 @@ def review_case(id: UUID, req: HumanReviewRequest, db: Session = Depends(get_db)
 
     # Keep the human decision and AI recommendation separate. An ESCALATE
     # recommendation remains escalated even when a reviewer approves it.
-    case.final_action = req.action
+    case.final_action = case.ai_recommendation if req.action == "approve" else req.action
     case.status = lifecycle_after_human_review(case.ai_recommendation, req.action)
 
     db.add(AuditLog(

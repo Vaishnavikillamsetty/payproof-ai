@@ -3,6 +3,7 @@
 export type CaseStatus =
   | 'new'
   | 'investigating'
+  | 'pending_review'
   | 'strong_case'
   | 'weak_case'
   | 'human_review'

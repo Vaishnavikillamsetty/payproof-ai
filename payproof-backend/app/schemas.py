@@ -27,7 +27,7 @@ class CaseResponse(BaseModel):
     ai_recommendation: Optional[str] = None
     final_action: Optional[str] = None
     contradiction_detected: bool = False
-    currency: str = "INR"
+    currency: str = "UNKNOWN"
     completeness_score: Optional[float] = None
     overall_confidence: Optional[float] = None
     created_at: datetime
