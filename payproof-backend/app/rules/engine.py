@@ -10,7 +10,8 @@ def check_timeline_rules(case, evidence_list):
 
     delivery_evt = next((e for e in evidence_list if e.evidence_type == "delivery"), None)
     refund_evt = next((e for e in evidence_list if e.evidence_type == "refund"), None)
-    otp_evt = next((e for e in evidence_list if e.evidence_type == "otp"), None)
+    otp_evts = [e for e in evidence_list if e.evidence_type == "otp"]
+    otp_evt = otp_evts[0] if otp_evts else None
     communication_evt = next((e for e in evidence_list if e.evidence_type == "communication"), None)
 
     # 1. Refund before payment
@@ -39,19 +40,27 @@ def check_timeline_rules(case, evidence_list):
                 flags.append(("amount_mismatch", True,
                                f"Disputed amount ({case.amount}) does not match payment record ({payment_amount})"))
 
-    # 4. Unauthorized transaction but OTP verified
+    # 4. Conflicting authentication evidence is a security signal. It must
+    # take precedence over a single successful OTP record or generic evidence
+    # completeness when producing the deterministic recommendation.
+    otp_verified_values = {e.content.get("verified") for e in otp_evts if e.content.get("verified") in (True, False)}
+    if otp_verified_values == {True, False}:
+        flags.append(("conflicting_otp_verification", True,
+                      "Authentication records conflict: both verified and unverified OTP events were found"))
+
+    # 5. Unauthorized transaction but OTP verified
     if case.dispute_reason == "unauthorized transaction" and otp_evt is not None:
         if otp_evt.content.get("verified") is True:
             flags.append(("unauthorized_but_otp_verified", True,
                            "Transaction is disputed as unauthorized but OTP verification succeeded"))
 
-    # 5. Duplicate charge without multiple payments
+    # 6. Duplicate charge without multiple payments
     if case.dispute_reason == "duplicate charge":
         if len(payment_evts) < 2:
             flags.append(("duplicate_charge_missing_evidence", True,
                            "Claim is duplicate charge but multiple payment records were not found"))
 
-    # 6. Cancellation claim but no communication/cancellation record
+    # 7. Cancellation claim but no communication/cancellation record
     if case.dispute_reason == "subscription not cancelled":
         # Check if there is any communication evidence showing cancellation
         has_cancellation = False

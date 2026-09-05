@@ -50,6 +50,40 @@ def init_db():
                     WHERE a.case_id = c.id AND a.step = 'human_review_decision'
                   )
             """))
+
+            # Backfill a high-priority authentication contradiction for legacy
+            # cases. Unreviewed cases are routed to escalation; reviewed cases
+            # retain their recorded human workflow decision.
+            conn.execute(text("""
+                UPDATE cases AS c
+                SET contradiction_detected = TRUE,
+                    ai_recommendation = CASE
+                        WHEN NOT EXISTS (
+                            SELECT 1 FROM audit_log AS a
+                            WHERE a.case_id = c.id AND a.step = 'human_review_decision'
+                        ) THEN 'ESCALATE'
+                        ELSE c.ai_recommendation
+                    END,
+                    status = CASE
+                        WHEN NOT EXISTS (
+                            SELECT 1 FROM audit_log AS a
+                            WHERE a.case_id = c.id AND a.step = 'human_review_decision'
+                        ) THEN 'escalated'
+                        ELSE c.status
+                    END
+                WHERE EXISTS (
+                    SELECT 1 FROM evidence AS verified
+                    WHERE verified.case_id = c.id
+                      AND verified.evidence_type = 'otp'
+                      AND verified.content->>'verified' = 'true'
+                )
+                  AND EXISTS (
+                    SELECT 1 FROM evidence AS unverified
+                    WHERE unverified.case_id = c.id
+                      AND unverified.evidence_type = 'otp'
+                      AND unverified.content->>'verified' = 'false'
+                )
+            """))
                 
     except Exception as e:
         logger.error(f"Error during schema migration: {e}")

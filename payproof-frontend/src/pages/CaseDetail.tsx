@@ -99,6 +99,12 @@ function AiRecommendationCard({ c, audit }: { c: CaseDetailType, audit: AuditEnt
           </div>
         </div>
       </div>
+      {c.contradiction_detected && (
+        <div style={{ marginTop: 16, padding: '12px 14px', borderLeft: '3px solid var(--color-red)', background: 'rgba(214,72,60,0.08)' }}>
+          <div className="font-mono" style={{ fontSize: 11, color: 'var(--color-red)', letterSpacing: '0.06em' }}>SECURITY / EVIDENCE CONFLICT DETECTED</div>
+          <div className="font-body text-slate" style={{ fontSize: 12, marginTop: 4 }}>Deterministic safety rules require human review; this case is not treated as low risk.</div>
+        </div>
+      )}
       
       {/* If human reviewed, show Human Review / Final Action / Lifecycle */}
       {hasReview ? (

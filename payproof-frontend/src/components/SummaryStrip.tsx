@@ -5,34 +5,43 @@ interface Props {
   cases: Case[]
 }
 
-const ACTIVE_STATUSES = ['new', 'investigating', 'strong_case', 'weak_case', 'human_review',
-  'request_more_evidence', 'escalate', 'contest', 'accept', 'action_required', 'under_review']
+const OPEN_LIFECYCLES = new Set([
+  'new', 'investigating', 'pending_review', 'human_review', 'escalate', 'escalated',
+  'request_more_evidence', 'evidence_requested', 'strong_case', 'weak_case', 'contest',
+  'accept', 'action_required', 'under_review',
+])
 
 export default function SummaryStrip({ cases }: Props) {
-  const active = cases.filter(c => ACTIVE_STATUSES.includes(c.status))
-  const amountAtRisk = active.reduce((sum, c) => sum + (c.amount ?? 0), 0)
+  const openCases = cases.filter(c => OPEN_LIFECYCLES.has(c.status))
+  const amountAtRiskByCurrency = new Map<string, number>()
+  for (const c of openCases) {
+    const currency = c.currency?.trim().toUpperCase() || 'UNKNOWN'
+    amountAtRiskByCurrency.set(currency, (amountAtRiskByCurrency.get(currency) ?? 0) + (c.amount ?? 0))
+  }
+  const amountAtRisk = [...amountAtRiskByCurrency.entries()]
+    .map(([currency, amount]) => formatAmount(amount, currency))
+    .join(' · ')
 
   const recommendationsReady = cases.filter(c =>
-    ['strong_case', 'weak_case', 'request_more_evidence', 'escalate', 'contest', 'accept']
-      .includes(c.status) && c.overall_confidence !== null
+    c.ai_recommendation !== null && c.overall_confidence !== null && c.final_action === null
   ).length
 
   const pendingReview = cases.filter(c =>
-    c.status === 'human_review' || c.status === 'escalate'
+    ['pending_review', 'human_review', 'escalate', 'escalated', 'request_more_evidence', 'evidence_requested'].includes(c.status)
   ).length
 
   const stats = [
     {
-      label: 'Active Disputes',
-      value: active.length.toString(),
+      label: 'Open Cases',
+      value: openCases.length.toString(),
       sub: `${cases.length} total`,
       color: 'var(--color-white)',
     },
     {
       label: 'Amount at Risk',
-      value: active.length > 0 ? formatAmount(amountAtRisk) : '???',
+      value: openCases.length > 0 ? amountAtRisk : '—',
       sub: 'open cases only',
-      color: amountAtRisk > 0 ? 'var(--color-amber)' : 'var(--color-white)',
+      color: openCases.length > 0 ? 'var(--color-amber)' : 'var(--color-white)',
     },
     {
       label: 'AI Recommendations Ready',

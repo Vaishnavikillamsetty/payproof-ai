@@ -44,9 +44,9 @@ export default function Dashboard({ onSelectCase }: Props) {
 
   const filterGroups: Partial<Record<FilterValue, string[]>> = {
     'all': [],
-    'strong_case': ['strong_case', 'accept', 'contest'],
-    'human_review': ['human_review', 'escalate'],
-    'request_more_evidence': ['request_more_evidence', 'weak_case'],
+    'strong_case': ['strong_case', 'accept', 'contest', 'pending_review'],
+    'human_review': ['human_review', 'escalate', 'escalated'],
+    'request_more_evidence': ['request_more_evidence', 'evidence_requested', 'weak_case'],
     'investigating': ['investigating', 'new', 'under_review', 'action_required'],
     'closed': ['closed', 'resolved', 'won', 'lost']
   }

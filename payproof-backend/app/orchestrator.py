@@ -273,6 +273,9 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
                 elif any(kw in text for kw in ["otp", "verified", "auth"]):
                     claim.verdict = "contradicted"
                     claim.confidence = 0.72
+                elif "conflicting_otp_verification" in text:
+                    claim.verdict = "contradicted"
+                    claim.confidence = 0.9
                 else:
                     claim.verdict = "unverifiable"
                     claim.confidence = 0.40

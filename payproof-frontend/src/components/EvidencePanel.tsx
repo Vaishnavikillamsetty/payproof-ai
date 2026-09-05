@@ -9,6 +9,11 @@ interface Props {
 export default function EvidencePanel({ evidenceList, audit = [] }: Props) {
   const verified = evidenceList.filter(e => e.evidence_type === 'payment' || e.evidence_type === 'refund')
   const merchant = evidenceList.filter(e => !['payment', 'refund', 'ai_analysis', 'contradiction', 'risk'].includes(e.evidence_type))
+  const otpValues = new Set(evidenceList
+    .filter(e => e.evidence_type === 'otp')
+    .map(e => e.content?.verified)
+    .filter((value): value is boolean => typeof value === 'boolean'))
+  const hasOtpConflict = otpValues.has(true) && otpValues.has(false)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -57,6 +62,7 @@ export default function EvidencePanel({ evidenceList, audit = [] }: Props) {
         const title = isMock || usedFallback ? "RULE ANALYSIS / SYSTEM ANALYSIS" : "AI ANALYSIS"
         const subtitle = isMock || usedFallback ? "Deterministic safety analysis used because live AI verification is unavailable." : "System-generated findings and risk assessments."
         const recStep = audit.find(a => a.step === 'agent_recommendation_created')
+        const displayedRisk = hasOtpConflict ? 'HIGH' : String(recStep?.detail?.risk_level || '-')
 
         return (
           <div className="card" style={{ overflow: 'hidden' }}>
@@ -88,9 +94,14 @@ export default function EvidencePanel({ evidenceList, audit = [] }: Props) {
                     </div>
                     <div>
                       <span className="font-mono text-slate" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 4 }}>Risk Level</span>
-                      <span className="font-mono" style={{ fontSize: 13, color: 'var(--color-white)' }}>{String(recStep.detail?.risk_level || '-').toUpperCase()}</span>
+                      <span className="font-mono" style={{ fontSize: 13, color: hasOtpConflict ? 'var(--color-red)' : 'var(--color-white)' }}>{displayedRisk.toUpperCase()}</span>
                     </div>
                   </div>
+                  {hasOtpConflict && (
+                    <div className="font-body" style={{ fontSize: 12, color: 'var(--color-red)' }}>
+                      Conflicting OTP results detected: verified and unverified authentication events require human review.
+                    </div>
+                  )}
                 </div>
               )}
             </div>

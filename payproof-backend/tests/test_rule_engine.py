@@ -44,6 +44,18 @@ def test_delivery_evidence_no_delivery():
     assert not any(f[0] == "delivery_evidence_exists_but_disputed" for f in flags)
 
 
+def test_conflicting_otp_evidence_is_a_security_contradiction():
+    case = SimpleNamespace(dispute_reason="unauthorized transaction", amount=1100.00)
+    evidence_list = [
+        SimpleNamespace(evidence_type="otp", content={"verified": True, "ip_address": "192.168.1.5"}, event_timestamp=None),
+        SimpleNamespace(evidence_type="otp", content={"verified": False, "ip_address": "203.0.113.42"}, event_timestamp=None),
+    ]
+    flags = check_timeline_rules(case, evidence_list)
+    conflict = next(flag for flag in flags if flag[0] == "conflicting_otp_verification")
+    assert conflict[1] is True
+    assert "both verified and unverified" in conflict[2]
+
+
 # ─── Amount mismatch rule ────────────────────────────────────────────────────
 
 def _payment_ev(amount):
