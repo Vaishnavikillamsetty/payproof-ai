@@ -190,7 +190,7 @@ export default function NewCase({ onCancel, onSuccess }: Props) {
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Amount ($)</label>
+            <label style={labelStyle}>Amount (₹)</label>
             <input
               type="number"
               step="0.01"
