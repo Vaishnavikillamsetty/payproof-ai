@@ -1,4 +1,11 @@
-import { useState, useEffect } from 'react'
+import pathlib
+
+# ── FIX 1: NewCase.tsx ─────────────────────────────────────────────────────
+# Remove the right-side scenario preview panel.
+# Keep demoScenarioInfo state ONLY if used elsewhere – it isn't, so drop it.
+# Keep all rotation logic, scenario data, form population.
+
+new_case_src = r'''import { useState, useEffect } from 'react'
 import { api } from '../api'
 import { getNextScenario } from '../scenarios'
 
@@ -256,3 +263,7 @@ export default function NewCase({ onCancel, onSuccess }: Props) {
     </main>
   )
 }
+'''
+
+pathlib.Path('src/pages/NewCase.tsx').write_text(new_case_src, encoding='utf-8')
+print("NewCase.tsx written")

@@ -1,4 +1,19 @@
-import { useEffect, useState } from 'react'
+import pathlib
+
+# ── FIX 2: Metrics.tsx ─────────────────────────────────────────────────────
+# Keep benchmark section exactly as-is.
+# Add LIVE CASE ACTIVITY section below it, using api.getCases().
+#
+# Live statistic mapping from existing CaseStatus values:
+#   Cases Processed  = all cases with a terminal/investigated status
+#                      (anything that's not 'new' or 'investigating')
+#   Auto-Resolved    = 'strong_case' | 'resolved' | 'accept' | 'contest' | 'won'
+#   Human Review     = 'human_review' | 'escalate' | 'request_more_evidence'
+#   Insufficient Ev. = 'weak_case'
+#   Contradictions   = cases with completeness_score < 50 AND
+#                      overall_confidence not null AND human_review status
+
+metrics_src = r'''import { useEffect, useState } from 'react'
 import {
   BarChart,
   Bar,
@@ -348,3 +363,7 @@ export default function Metrics() {
     </main>
   )
 }
+'''
+
+pathlib.Path('src/pages/Metrics.tsx').write_text(metrics_src, encoding='utf-8')
+print("Metrics.tsx written")
