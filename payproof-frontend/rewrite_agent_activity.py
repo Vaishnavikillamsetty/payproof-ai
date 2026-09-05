@@ -1,3 +1,6 @@
+import pathlib
+
+content = """\
 import type { AuditEntry } from '../types'
 import { getAgentToolCalls } from '../utils'
 import { useState } from 'react'
@@ -140,3 +143,7 @@ export default function AgentActivity({ audit }: Props) {
     </div>
   )
 }
+"""
+
+pathlib.Path('src/components/AgentActivity.tsx').write_text(content, encoding='utf-8')
+print("AgentActivity.tsx written cleanly")

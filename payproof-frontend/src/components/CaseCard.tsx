@@ -82,7 +82,7 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span className="font-mono text-slate" style={{ fontSize: 11 }}>{c.merchant_id.toUpperCase()}</span>
-            <span className="font-mono" style={{ fontSize: 12, color: 'var(--color-slate-light)', fontWeight: 600 }}>{formatAmount(c.amount)}</span>
+            <span className="font-mono" style={{ fontSize: 12, color: 'var(--color-slate-light)', fontWeight: 600 }}>{formatAmount(c.amount, c.currency)}</span>
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
 import type { CaseDetail as CaseDetailType, AuditEntry } from '../types'
-import { statusTheme, getAIRecommendation, aiRecommendationLabel, isWebhookOrigin, isDemoCase } from '../utils'
+import { statusTheme, getAIRecommendation, aiRecommendationLabel, isWebhookOrigin, isDemoCase, formatAmount } from '../utils'
 import EvidencePanel from '../components/EvidencePanel'
 import AgentActivity from '../components/AgentActivity'
 import ClaimList from '../components/ClaimList'
@@ -17,9 +17,7 @@ function shortTxn(id: string) {
   return parts.length > 2 ? parts.slice(0, 3).join('_') : (id.length > 12 ? id.slice(0, 12) + '...' : id)
 }
 
-function formatAmount(n: number) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(n)
-}
+
 
 function formatDisputeReason(reason: string) {
   return reason.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
@@ -64,23 +62,29 @@ function AiRecommendationCard({ c, audit }: { c: CaseDetailType, audit: AuditEnt
     )
   }
 
-  const recStr = aiRec?.recommended_action || c.status
+  // If the backend has a specific ai_recommendation, use it. Otherwise fall back to aiRec or status.
+  const recStr = c.ai_recommendation || aiRec?.recommended_action || c.status
+  const recLabel = aiRecommendationLabel(recStr)
   const recColor = (recStr === 'contest' || recStr === 'strong_case') ? 'var(--color-teal)' :
                    (recStr === 'request_more_evidence' || recStr === 'weak_case') ? 'var(--color-amber)' :
                    (recStr === 'escalate' || recStr === 'human_review') ? 'var(--color-red)' : 'var(--color-slate)'
 
-  const recLabel = aiRecommendationLabel(recStr)
-
-  let modeLabel = '?? AI AGENT INVESTIGATION'
+  let modeLabel = '🤖 AI AGENT INVESTIGATION'
   if (isMock) modeLabel = 'DEMO RULE-BASED INVESTIGATION'
-  else if (usedFallback) modeLabel = '? DETERMINISTIC FALLBACK'
+  else if (usedFallback) modeLabel = '⚠ DETERMINISTIC FALLBACK'
+  
+  const hasReview = !!c.final_action
+  const finalActionColor = (c.final_action === 'contest' || c.final_action === 'strong_case') ? 'var(--color-teal)' :
+                   (c.final_action === 'request_more_evidence' || c.final_action === 'weak_case') ? 'var(--color-amber)' :
+                   (c.final_action === 'escalate' || c.final_action === 'human_review') ? 'var(--color-red)' : 'var(--color-slate)'
 
   return (
     <div className="card" style={{ padding: '24px', marginBottom: 24, borderTop: `4px solid ${recColor}` }}>
+      {/* Top row: AI Recommendation & Confidence */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div className="font-mono text-slate" style={{ fontSize: 11, letterSpacing: '0.1em', marginBottom: 8 }}>
-            {modeLabel}
+            AI RECOMMENDATION ({modeLabel})
           </div>
           <div className="font-mono" style={{ fontSize: 24, color: recColor, fontWeight: 700, letterSpacing: '0.02em' }}>
             {recLabel}
@@ -94,20 +98,39 @@ function AiRecommendationCard({ c, audit }: { c: CaseDetailType, audit: AuditEnt
         </div>
       </div>
       
-      <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--color-ink-border)' }}>
-        <div className="font-mono text-slate" style={{ fontSize: 11, marginBottom: 8 }}>BASED ON:</div>
-        <ul className="font-body" style={{ margin: 0, paddingLeft: 20, color: 'var(--color-slate-light)', fontSize: 13, lineHeight: 1.6 }}>
-          <li><span style={{ color: 'var(--color-teal)' }}>?</span> Verified payment evidence</li>
-          <li><span style={{ color: 'var(--color-amber)' }}>?</span> Merchant records</li>
-          <li>?? AI consistency analysis</li>
-        </ul>
-        <p className="font-body text-slate" style={{ fontSize: 12, marginTop: 12, fontStyle: 'italic' }}>
-          Recommendation only - final action requires human review.
-        </p>
-      </div>
+      {/* If human reviewed, show Human Review / Final Action / Lifecycle */}
+      {hasReview ? (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--color-ink-border)' }}>
+          <div>
+            <div className="font-mono text-slate" style={{ fontSize: 11, letterSpacing: '0.05em', marginBottom: 4 }}>HUMAN REVIEW</div>
+            <div className="font-mono text-white" style={{ fontSize: 14 }}>{c.final_action === recStr ? 'Approved' : 'Overridden'}</div>
+          </div>
+          <div>
+            <div className="font-mono text-slate" style={{ fontSize: 11, letterSpacing: '0.05em', marginBottom: 4 }}>FINAL ACTION</div>
+            <div className="font-mono" style={{ fontSize: 14, color: finalActionColor, fontWeight: 600 }}>{aiRecommendationLabel(c.final_action)}</div>
+          </div>
+          <div>
+            <div className="font-mono text-slate" style={{ fontSize: 11, letterSpacing: '0.05em', marginBottom: 4 }}>LIFECYCLE</div>
+            <div className="font-mono" style={{ fontSize: 14, color: 'var(--color-teal)', fontWeight: 600 }}>{c.status.toUpperCase()}</div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--color-ink-border)' }}>
+          <div className="font-mono text-slate" style={{ fontSize: 11, marginBottom: 8 }}>BASED ON:</div>
+          <ul className="font-body" style={{ margin: 0, paddingLeft: 20, color: 'var(--color-slate-light)', fontSize: 13, lineHeight: 1.6 }}>
+            <li><span style={{ color: 'var(--color-teal)' }}>✓</span> Verified payment evidence</li>
+            <li><span style={{ color: 'var(--color-amber)' }}>✓</span> Merchant records</li>
+            <li>🤖 AI consistency analysis</li>
+          </ul>
+          <p className="font-body text-slate" style={{ fontSize: 12, marginTop: 12, fontStyle: 'italic' }}>
+            Recommendation only - final action requires human review.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
+
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
@@ -212,7 +235,7 @@ export default function CaseDetail({ caseId, onBack }: Props) {
             </span>
           </div>
           <div className="font-body text-slate" style={{ fontSize: 14, marginBottom: 4 }}>
-            <span style={{ color: 'var(--color-white)', fontWeight: 500 }}>{formatAmount(c.amount)}</span> . {formatDisputeReason(c.dispute_reason)} . Merchant <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{c.merchant_id.toUpperCase()}</span>
+            <span style={{ color: 'var(--color-white)', fontWeight: 500 }}>{formatAmount(c.amount, c.currency)}</span> . {formatDisputeReason(c.dispute_reason)} . Merchant <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{c.merchant_id.toUpperCase()}</span>
           </div>
           <div className="font-body text-slate-light" style={{ fontSize: 14, fontStyle: 'italic' }}>
             "{c.customer_claim}"
@@ -255,7 +278,7 @@ export default function CaseDetail({ caseId, onBack }: Props) {
 
       {/* 5. EVIDENCE BY SOURCE */}
       <SectionHeader>Evidence by Source</SectionHeader>
-      <EvidencePanel evidenceList={c.evidence} />
+      <EvidencePanel evidenceList={c.evidence} audit={audit} />
 
       {/* 6. CLAIM VERIFICATION */}
       <SectionHeader>Claim Verification</SectionHeader>

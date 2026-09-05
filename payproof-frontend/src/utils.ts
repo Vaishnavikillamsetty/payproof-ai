@@ -117,13 +117,15 @@ export function formatDate(iso: string): string {
   })
 }
 
-/** Format a number as USD. */
-export function formatAmount(n: number): string {
-  return new Intl.NumberFormat('en-IN', {
+/** Format a number as currency based on the provided code. */
+export function formatAmount(n: number, currency: string = 'USD'): string {
+  // Use en-US locale for consistent formatting (e.g. $45.00 instead of US$45.00 in some locales)
+  const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: currency,
     minimumFractionDigits: 2,
-  }).format(n)
+  })
+  return `${formatter.format(n)} ${currency.toUpperCase()}`
 }
 
 /**

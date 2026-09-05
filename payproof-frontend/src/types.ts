@@ -24,7 +24,11 @@ export interface Case {
   customer_claim: string
   merchant_id: string
   amount: number
+  currency: string
   status: CaseStatus
+  ai_recommendation: string | null
+  final_action: string | null
+  contradiction_detected: boolean
   completeness_score: number | null
   overall_confidence: number | null
   created_at: string

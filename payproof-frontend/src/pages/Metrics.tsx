@@ -29,13 +29,8 @@ function computeLiveStats(cases: Case[]) {
   const autoResolved = processed.filter(c => AUTO_RESOLVED_STATUSES.has(c.status))
   const humanReview = processed.filter(c => HUMAN_REVIEW_STATUSES.has(c.status))
   const insufficient = processed.filter(c => INSUFFICIENT_EVIDENCE_STATUSES.has(c.status))
-  // Contradictions: resolved into human review with contradictory signals
-  // We use cases in human_review / escalate that have a low completeness score
-  // as a proxy for contradiction-driven escalation.
-  const contradictions = processed.filter(
-    c => (c.status === 'human_review' || c.status === 'escalate') &&
-         c.completeness_score !== null && c.completeness_score < 50
-  )
+  // Contradictions: derived from the actual backend contradiction_detected flag
+  const contradictions = processed.filter(c => c.contradiction_detected)
   return {
     total: cases.length,
     processed: processed.length,
@@ -333,7 +328,7 @@ export default function Metrics() {
           <p className="font-body text-slate-light" style={{ fontSize: 12, margin: 0, lineHeight: 1.5 }}>
             Status mapping: <em>Auto-Resolved</em> includes statuses strong_case, resolved, accept, contest, won, closed.
             <em> Human Review</em> includes human_review, escalate, request_more_evidence.
-            <em> Contradictions</em> are escalated cases with completeness score below 50%.
+            <em> Contradictions</em> are cases where contradicting evidence was detected by the rules engine.
           </p>
         </div>
       </div>
