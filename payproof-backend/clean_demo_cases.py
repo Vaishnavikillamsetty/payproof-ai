@@ -5,7 +5,6 @@ from app.db.models import Case, Evidence, AuditLog, RuleFlag, Claim
 
 db = SessionLocal()
 demo_cases = db.query(Case).filter(
-    (Case.transaction_id.like("DEMO_TXN_%")) | 
     (Case.transaction_id.like("DEMO_SCN_%"))
 ).all()
 
