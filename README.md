@@ -2,6 +2,10 @@
 
 PayProof AI is an intelligent dispute resolution platform designed to automatically investigate and resolve chargebacks and payment disputes. By integrating a deterministic rule engine with advanced LLM capabilities (Anthropic's Claude), PayProof AI achieves high accuracy in classifying dispute evidence and making automated recommendations, minimizing manual human review.
 
+## 🚀 Live Demo
+
+**PayProof AI:** https://payproof-frontend.vercel.app/
+
 ## Features
 
 - **Automated Evidence Gathering:** Simulates retrieval of payment gateway logs, delivery confirmations, OTP logs, and merchant communications.
