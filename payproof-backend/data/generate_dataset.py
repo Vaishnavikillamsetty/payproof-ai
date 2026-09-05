@@ -78,7 +78,7 @@ def generate_cases(num_cases=180):
         sampled_time, sampled_amount = random.choice(real_transactions)
         
         # We sample amounts from the Kaggle dataset for realism instead of uniform random.
-        # Note: We enforce a minimum of 1.00 to avoid $0.00 dispute edge cases.
+        # Note: We enforce a minimum of 1.00 to avoid ₹0.00 dispute edge cases.
         amount = max(1.0, round(sampled_amount, 2))
         
         # We use the Kaggle dataset's 'Time' (seconds) to get a realistic time-of-day distribution,
@@ -120,7 +120,7 @@ def generate_cases(num_cases=180):
             case_id=case_id,
             evidence_type="payment",
             source_id=db_case.transaction_id,
-            content={"amount": payment_amount, "currency": "USD", "status": "success"},
+            content={"amount": payment_amount, "currency": "INR", "status": "success"},
             event_timestamp=base_date
         ))
         
@@ -170,7 +170,7 @@ def generate_cases(num_cases=180):
                     case_id=case_id,
                     evidence_type="payment",
                     source_id=f"txn_{random.randint(10000, 99999)}_dup",
-                    content={"amount": amount, "currency": "USD", "status": "success"},
+                    content={"amount": amount, "currency": "INR", "status": "success"},
                     event_timestamp=base_date + timedelta(minutes=2)
                 ))
             elif label == "ambiguous":
@@ -179,7 +179,7 @@ def generate_cases(num_cases=180):
                     case_id=case_id,
                     evidence_type="payment",
                     source_id=f"txn_{random.randint(10000, 99999)}_diff",
-                    content={"amount": amount / 2, "currency": "USD", "status": "success"},
+                    content={"amount": amount / 2, "currency": "INR", "status": "success"},
                     event_timestamp=base_date + timedelta(minutes=5)
                 ))
             # If legitimate, we do nothing (only one payment exists)

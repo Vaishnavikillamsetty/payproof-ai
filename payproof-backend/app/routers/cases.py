@@ -9,6 +9,7 @@ from app.db.models import AuditLog, Case, Evidence
 from app.db.session import get_db
 from app.agents.external_systems import get_demo_expected_amount
 from app.orchestrator import run_pipeline
+from app.lifecycle import lifecycle_after_human_review
 from app.config import settings
 from app.schemas import AuditLogResponse, CaseCreate, CaseDetailResponse, CaseResponse, HumanReviewRequest
 
@@ -37,7 +38,7 @@ def create_case(
     from app.agents.external_systems import _get_base_demo_id
     base_id = _get_base_demo_id(case_in.transaction_id)
     pmt = db.query(PaymentGatewayRecord).filter_by(transaction_id=base_id).first()
-    final_currency = pmt.currency if pmt else "USD"
+    final_currency = pmt.currency if pmt else "INR"
     if demo_amount is not None:
         final_amount = demo_amount
     else:
@@ -146,16 +147,10 @@ def review_case(id: UUID, req: HumanReviewRequest, db: Session = Depends(get_db)
     if req.action not in ["approve", "request_more_evidence", "escalate"]:
         raise HTTPException(status_code=400, detail="Invalid action")
 
-    # Map the UI action to a valid case status
-    # Note: approve will resolve the case, request_more_evidence / escalate match the DB status enum
-    if req.action == "escalate":
-        case.final_action = "escalate"
-    elif req.action == "request_more_evidence":
-        case.final_action = "request_more_evidence"
-    elif req.action == "approve":
-        case.final_action = case.ai_recommendation
-        
-    case.status = "resolved"
+    # Keep the human decision and AI recommendation separate. An ESCALATE
+    # recommendation remains escalated even when a reviewer approves it.
+    case.final_action = req.action
+    case.status = lifecycle_after_human_review(case.ai_recommendation, req.action)
 
     db.add(AuditLog(
         case_id=case.id,

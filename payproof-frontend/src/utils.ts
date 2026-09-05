@@ -10,10 +10,12 @@ export function statusTheme(status: CaseStatus | string | null | undefined) {
       return { edgeClass: 'verdict-edge-teal', badgeClass: 'badge-teal', label: 'Accept', dot: '#3FA796' }
     case 'weak_case':
     case 'request_more_evidence':
+    case 'evidence_requested':
       return { edgeClass: 'verdict-edge-amber', badgeClass: 'badge-amber', label: 'More Evidence Needed', dot: '#E0A339' }
     case 'human_review':
     case 'escalate':
-      return { edgeClass: 'verdict-edge-red', badgeClass: 'badge-red', label: 'Escalate', dot: '#D6483C' }
+    case 'escalated':
+      return { edgeClass: 'verdict-edge-red', badgeClass: 'badge-red', label: 'Escalated', dot: '#D6483C' }
     case 'investigating':
       return { edgeClass: 'verdict-edge-slate', badgeClass: 'badge-slate', label: 'Investigating…', dot: '#5B6B7C' }
     case 'new':
@@ -32,6 +34,19 @@ export function statusTheme(status: CaseStatus | string | null | undefined) {
       return { edgeClass: 'verdict-edge-teal', badgeClass: 'badge-teal', label: 'Resolved', dot: '#3FA796' }
     default:
       return { edgeClass: 'verdict-edge-slate', badgeClass: 'badge-slate', label: status ?? 'Unknown', dot: '#5B6B7C' }
+  }
+}
+
+/** Keep legacy API rows visually consistent while their lifecycle is backfilled. */
+export function lifecycleStatus(status: CaseStatus | string, recommendation: string | null): string {
+  switch (recommendation?.trim().toLowerCase()) {
+    case 'escalate': return 'escalated'
+    case 'request_more_evidence': return 'evidence_requested'
+    case 'approve':
+    case 'reject':
+    case 'accept':
+    case 'contest': return 'resolved'
+    default: return status
   }
 }
 
@@ -118,14 +133,15 @@ export function formatDate(iso: string): string {
 }
 
 /** Format a number as currency based on the provided code. */
-export function formatAmount(n: number, currency: string = 'USD'): string {
-  // Use en-US locale for consistent formatting (e.g. $45.00 instead of US$45.00 in some locales)
+export function formatAmount(n: number, currency: string = 'INR'): string {
+  // Display amounts in Indian rupees throughout the product.
+  const displayCurrency = currency === 'USD' ? 'INR' : currency
   const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: currency,
+    currency: displayCurrency,
     minimumFractionDigits: 2,
   })
-  return `${formatter.format(n)} ${currency.toUpperCase()}`
+  return `${formatter.format(n)} ${displayCurrency.toUpperCase()}`
 }
 
 /**

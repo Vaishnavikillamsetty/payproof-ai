@@ -153,7 +153,7 @@ def _fetch_dynamic(case, db: Session, base_date: datetime) -> int:
     if bucket <= 3:
         # ── Scenario A (40%): Full evidence → strong_case ──────────────────
         _add_evidence(db, case, "payment", case.transaction_id,
-                      {"amount": amount, "currency": "USD", "status": "success"},
+                      {"amount": amount, "currency": "INR", "status": "success"},
                       base_date, FALLBACK_NOTE)
         _add_evidence(db, case, "delivery", f"TRK-{case.transaction_id[-6:].upper()}",
                       {"status": "delivered", "signed_by": "Customer",
@@ -174,7 +174,7 @@ def _fetch_dynamic(case, db: Session, base_date: datetime) -> int:
     elif bucket <= 6:
         # ── Scenario B (30%): Payment only → weak_case ─────────────────────
         _add_evidence(db, case, "payment", case.transaction_id,
-                      {"amount": amount, "currency": "USD", "status": "success"},
+                      {"amount": amount, "currency": "INR", "status": "success"},
                       base_date, FALLBACK_NOTE)
         created = 1
 
@@ -182,7 +182,7 @@ def _fetch_dynamic(case, db: Session, base_date: datetime) -> int:
         # ── Scenario C (20%): Payment + contradicting delivery → human_review
         # Works most dramatically when dispute_reason is "product not received"
         _add_evidence(db, case, "payment", case.transaction_id,
-                      {"amount": amount, "currency": "USD", "status": "success"},
+                      {"amount": amount, "currency": "INR", "status": "success"},
                       base_date, FALLBACK_NOTE)
         _add_evidence(db, case, "delivery", f"TRK-{case.transaction_id[-6:].upper()}",
                       {"status": "delivered", "signed_by": "Front Desk",

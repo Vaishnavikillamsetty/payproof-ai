@@ -3,9 +3,9 @@ Rule engine tests.
 
 Existing tests: delivery_evidence_exists_but_disputed rule.
 New tests (added to cover the amount_mismatch bug):
-  - amount_mismatch fires when case.amount differs from payment evidence by more than $0.01
+  - amount_mismatch fires when case.amount differs from payment evidence by more than ₹0.01
   - amount_mismatch does NOT fire when amounts match exactly
-  - amount_mismatch does NOT fire when amounts differ only by float representation (<= $0.01)
+  - amount_mismatch does NOT fire when amounts differ only by float representation (<= ₹0.01)
   - amount_mismatch fires when user enters 0 but payment evidence has a real amount
 """
 from types import SimpleNamespace

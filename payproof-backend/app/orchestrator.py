@@ -32,6 +32,7 @@ from app.agents.external_systems import fetch_external_evidence
 from app.agents.investigation_agent import investigate
 from app.policy import completeness_score, policy_decision
 from app.rules.engine import check_timeline_rules
+from app.lifecycle import lifecycle_for_recommendation
 
 logger = logging.getLogger(__name__)
 
@@ -235,10 +236,15 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
         # Step 6: Policy gate — constrains the agent recommendation           #
         # ------------------------------------------------------------------ #
         avg_confidence = recommendation.confidence
-        status, reason = policy_decision(score, avg_confidence, contradictions_found)
+        policy_status, reason = policy_decision(score, avg_confidence, contradictions_found)
+        status = lifecycle_for_recommendation(
+            recommendation.recommended_action.value,
+            policy_status,
+        )
 
         _audit(db, case_id, "policy_decision", {
             "status": status,
+            "policy_status": policy_status,
             "reason": reason,
             "completeness": score,
             "agent_confidence": avg_confidence,

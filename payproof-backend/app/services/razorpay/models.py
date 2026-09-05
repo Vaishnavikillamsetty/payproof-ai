@@ -7,7 +7,7 @@ of the currency (paise for INR, cents for USD).
 
 Examples:
   ₹299.99  → amount_minor=29999,  currency="INR"
-  $150.00  → amount_minor=15000,  currency="USD"
+  ₹150.00  → amount_minor=15000,  currency="INR"
 
 This avoids floating-point precision issues in financial comparisons.
 Any display conversion (minor → major units) happens only at the API
@@ -21,8 +21,8 @@ from datetime import datetime
 
 class NormalizedPaymentDetails(BaseModel):
     payment_id: str
-    amount_minor: int       # e.g. 29999 for ₹299.99 or $299.99
-    currency: str           # ISO 4217: "INR", "USD"
+    amount_minor: int       # e.g. 29999 for ₹299.99
+    currency: str           # ISO 4217: "INR"
     status: str
     order_id: Optional[str] = None
     created_at: datetime

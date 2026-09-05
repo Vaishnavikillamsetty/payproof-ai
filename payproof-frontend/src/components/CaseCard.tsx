@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import type { Case } from '../types'
-import { formatAmount, formatDate, formatDisputeReason, shortTxn, statusTheme, aiRecommendationLabel, isDemoCase } from '../utils'
+import { formatAmount, formatDate, formatDisputeReason, shortTxn, statusTheme, aiRecommendationLabel, isDemoCase, lifecycleStatus } from '../utils'
 import CompletenessBar from './CompletenessBar'
 
 interface Props {
@@ -21,7 +21,8 @@ const REC_COLORS: Record<string, string> = {
 
 export default function CaseCard({ case_: c, index, onSelect }: Props) {
   const shouldReduceMotion = useReducedMotion()
-  const theme = statusTheme(c.status)
+  const lifecycle = lifecycleStatus(c.status, c.ai_recommendation)
+  const theme = statusTheme(lifecycle)
   const rec = c.ai_recommendation ? aiRecommendationLabel(c.ai_recommendation) : '-'
   const recColor = c.ai_recommendation ? (REC_COLORS[rec] ?? 'var(--color-slate)') : 'var(--color-slate)'
   const isDemo = isDemoCase(c.transaction_id)

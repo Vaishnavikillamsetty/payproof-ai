@@ -27,7 +27,7 @@ def check_timeline_rules(case, evidence_list):
         flags.append(("delivery_evidence_exists_but_disputed", True,
                        "Delivery record shows delivered despite non-receipt claim — needs verifier review"))
 
-    # 3. Amount mismatch — use a $0.01 tolerance to avoid spurious flags from
+    # 3. Amount mismatch — use a ₹0.01 tolerance to avoid spurious flags from
     #    floating-point representation differences (e.g. 299.99 vs 299.9900000001).
     #    A genuine mismatch (e.g. case.amount=0 vs payment=299.99) will still fire.
     if payment_evt:

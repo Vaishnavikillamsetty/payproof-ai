@@ -26,6 +26,24 @@ def init_db():
                 conn.execute(text("ALTER TABLE cases ADD COLUMN external_dispute_id VARCHAR"))
                 conn.execute(text("ALTER TABLE cases ADD CONSTRAINT uq_cases_external_dispute_id UNIQUE (external_dispute_id)"))
                 conn.execute(text("CREATE INDEX ix_cases_external_dispute_id ON cases (external_dispute_id)"))
+
+            # Idempotent lifecycle backfill for cases created before the AI
+            # recommendation and workflow state were kept separate.
+            conn.execute(text("""
+                UPDATE cases
+                SET status = CASE LOWER(ai_recommendation)
+                    WHEN 'escalate' THEN 'escalated'
+                    WHEN 'request_more_evidence' THEN 'evidence_requested'
+                    WHEN 'approve' THEN 'resolved'
+                    WHEN 'reject' THEN 'resolved'
+                    WHEN 'accept' THEN 'resolved'
+                    WHEN 'contest' THEN 'resolved'
+                    ELSE status
+                END
+                WHERE LOWER(ai_recommendation) IN (
+                    'escalate', 'request_more_evidence', 'approve', 'reject', 'accept', 'contest'
+                )
+            """))
                 
     except Exception as e:
         logger.error(f"Error during schema migration: {e}")

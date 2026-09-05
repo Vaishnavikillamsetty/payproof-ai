@@ -14,7 +14,7 @@ export function formatAmount(n: number): string {
 
 new_format = """/** Format a number as currency based on the provided code. */
 export function formatAmount(n: number, currency: string = 'USD'): string {
-  // Use en-US locale for consistent formatting (e.g. $45.00 instead of US$45.00 in some locales)
+  // Use the INR currency format consistently (e.g. ₹45.00).
   const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,

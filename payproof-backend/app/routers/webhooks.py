@@ -10,6 +10,7 @@ from app.db.session import get_db
 from app.db.models import WebhookEvent, Case, AuditLog
 from app.services.razorpay.factory import get_razorpay_provider
 from app.orchestrator import run_pipeline
+from app.lifecycle import lifecycle_for_recommendation
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -18,8 +19,10 @@ STATE_PRIORITY = {
     "new": 0,
     "investigating": 1,
     "request_more_evidence": 2,
+    "evidence_requested": 2,
     "human_review": 2,
     "escalate": 2,
+    "escalated": 2,
     "accept": 2,
     "contest": 2,
     "strong_case": 2,
@@ -175,6 +178,8 @@ def process_webhook_background(event_id: UUID, db: Session):
                 "payment.dispute.closed": "closed"
             }
             new_status = status_map.get(event.event_type)
+            if new_status:
+                new_status = lifecycle_for_recommendation(case.ai_recommendation, new_status)
             
             if new_status:
                 if can_transition(case.status, new_status):

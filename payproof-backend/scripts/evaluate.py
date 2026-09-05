@@ -113,7 +113,7 @@ def evaluate():
     recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
     
     total_cost = fp * AVG_REVIEW_COST_USD
-    cost_statement = f"{fp} clear dispute{'s' if fp != 1 else ''} would have been unnecessarily auto-flagged for human review, costing ${total_cost:.2f} in wasted manual review time (assuming ${AVG_REVIEW_COST_USD:.2f} per review)."
+    cost_statement = f"{fp} clear dispute{'s' if fp != 1 else ''} would have been unnecessarily auto-flagged for human review, costing ₹{total_cost:.2f} in wasted manual review time (assuming ₹{AVG_REVIEW_COST_USD:.2f} per review)."
     
     if fn > 0:
         fn_statement = f"CRITICAL INCIDENT: {fn} ambiguous case{'s' if fn != 1 else ''} {'were' if fn != 1 else 'was'} incorrectly auto-resolved instead of being routed for human review. This is a high-severity failure (unsafe auto-resolve)."

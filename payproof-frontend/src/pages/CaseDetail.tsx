@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
 import type { CaseDetail as CaseDetailType, AuditEntry } from '../types'
-import { statusTheme, getAIRecommendation, aiRecommendationLabel, isWebhookOrigin, isDemoCase, formatAmount } from '../utils'
+import { statusTheme, getAIRecommendation, aiRecommendationLabel, isWebhookOrigin, isDemoCase, formatAmount, lifecycleStatus } from '../utils'
 import EvidencePanel from '../components/EvidencePanel'
 import AgentActivity from '../components/AgentActivity'
 import ClaimList from '../components/ClaimList'
@@ -64,6 +64,7 @@ function AiRecommendationCard({ c, audit }: { c: CaseDetailType, audit: AuditEnt
 
   // If the backend has a specific ai_recommendation, use it. Otherwise fall back to aiRec or status.
   const recStr = c.ai_recommendation || aiRec?.recommended_action || c.status
+  const lifecycle = lifecycleStatus(c.status, c.ai_recommendation)
   const recLabel = aiRecommendationLabel(recStr)
   const recColor = (recStr === 'contest' || recStr === 'strong_case') ? 'var(--color-teal)' :
                    (recStr === 'request_more_evidence' || recStr === 'weak_case') ? 'var(--color-amber)' :
@@ -111,11 +112,15 @@ function AiRecommendationCard({ c, audit }: { c: CaseDetailType, audit: AuditEnt
           </div>
           <div>
             <div className="font-mono text-slate" style={{ fontSize: 11, letterSpacing: '0.05em', marginBottom: 4 }}>LIFECYCLE</div>
-            <div className="font-mono" style={{ fontSize: 14, color: 'var(--color-teal)', fontWeight: 600 }}>{c.status.toUpperCase()}</div>
+            <div className="font-mono" style={{ fontSize: 14, color: statusTheme(lifecycle).dot, fontWeight: 600 }}>{lifecycle.toUpperCase().replace(/_/g, ' ')}</div>
           </div>
         </div>
       ) : (
         <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--color-ink-border)' }}>
+          <div style={{ marginBottom: 16 }}>
+            <div className="font-mono text-slate" style={{ fontSize: 11, letterSpacing: '0.05em', marginBottom: 4 }}>LIFECYCLE</div>
+            <div className="font-mono" style={{ fontSize: 14, color: statusTheme(lifecycle).dot, fontWeight: 600 }}>{lifecycle.toUpperCase().replace(/_/g, ' ')}</div>
+          </div>
           <div className="font-mono text-slate" style={{ fontSize: 11, marginBottom: 8 }}>BASED ON:</div>
           <ul className="font-body" style={{ margin: 0, paddingLeft: 20, color: 'var(--color-slate-light)', fontSize: 13, lineHeight: 1.6 }}>
             <li><span style={{ color: 'var(--color-teal)' }}>✓</span> Verified payment evidence</li>

@@ -19,7 +19,7 @@ class Case(Base):
     ai_recommendation = Column(String, nullable=True)
     final_action = Column(String, nullable=True)
     contradiction_detected = Column(Boolean, default=False)
-    currency = Column(String, nullable=False, default="USD")
+    currency = Column(String, nullable=False, default="INR")
     completeness_score = Column(Numeric, nullable=True)
     overall_confidence = Column(Numeric, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)

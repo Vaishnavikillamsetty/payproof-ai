@@ -60,8 +60,8 @@ class DemoRazorpayProvider(RazorpayProvider):
             if bucket <= 8:
                 return NormalizedPaymentDetails(
                     payment_id=payment_id,
-                    amount_minor=29999,  # $299.99 in cents
-                    currency="USD",
+                    amount_minor=29999,  # ₹299.99 in paise
+                    currency="INR",
                     status="captured",
                     created_at=datetime.now(timezone.utc),
                     source=self.SOURCE,
@@ -78,7 +78,7 @@ class DemoRazorpayProvider(RazorpayProvider):
                 refund_id=f"rfnd_{payment_id[-6:]}",
                 payment_id=payment_id,
                 amount_minor=29999,
-                currency="USD",
+                currency="INR",
                 status="processed",
                 created_at=datetime.now(timezone.utc),
                 source=self.SOURCE,
@@ -91,7 +91,7 @@ class DemoRazorpayProvider(RazorpayProvider):
             dispute_id=dispute_id,
             payment_id=f"pay_{dispute_id[-6:]}",
             amount_minor=29999,
-            currency="USD",
+                currency="INR",
             reason_code="product_not_received",
             reason_description="Customer claims product was not delivered",
             status="open",

@@ -12,7 +12,7 @@
   },
   "business_impact": {
     "wasted_reviews": 14,
-    "cost_statement": "14 clear disputes would have been unnecessarily auto-flagged for human review, costing $70.00 in wasted manual review time (assuming $5.00 per review).",
+    "cost_statement": "14 clear disputes would have been unnecessarily auto-flagged for human review, costing ₹70.00 in wasted manual review time (assuming ₹5.00 per review).",
     "unsafe_resolves": 0,
     "unsafe_statement": "0 ambiguous cases were improperly auto-resolved. System maintained strict boundaries."
   },
