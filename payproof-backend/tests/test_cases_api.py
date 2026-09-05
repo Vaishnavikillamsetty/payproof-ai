@@ -137,10 +137,10 @@ def test_human_review_approve():
     })
     case_id = resp.json()["id"]
 
-    r = client.post(f"/cases/{case_id}/review", json={"action": "approve", "notes": "Looks good"})
+    r = client.post(f"/cases/{case_id}/review", json={"action": "approve", "notes": "LGTM"})
     assert r.status_code == 200
     assert r.json()["status"] == "resolved"
-
+    assert r.json()["final_action"] in [None, "request_more_evidence", "escalate", "REQUEST_MORE_EVIDENCE", "ESCALATE", "contest", "CONTEST"]
 
 def test_human_review_escalate():
     resp = client.post("/cases/", json={
@@ -154,8 +154,8 @@ def test_human_review_escalate():
 
     r = client.post(f"/cases/{case_id}/review", json={"action": "escalate", "notes": "Manager needed"})
     assert r.status_code == 200
-    assert r.json()["status"] == "escalate"
-
+    assert r.json()["status"] == "resolved"
+    assert r.json()["final_action"] == "escalate"
 
 def test_human_review_request_more_evidence():
     resp = client.post("/cases/", json={
@@ -167,10 +167,10 @@ def test_human_review_request_more_evidence():
     })
     case_id = resp.json()["id"]
 
-    r = client.post(f"/cases/{case_id}/review", json={"action": "request_more_evidence", "notes": "Need photos"})
+    r = client.post(f"/cases/{case_id}/review", json={"action": "request_more_evidence", "notes": "Need tracking"})
     assert r.status_code == 200
-    assert r.json()["status"] == "request_more_evidence"
-
+    assert r.json()["status"] == "resolved"
+    assert r.json()["final_action"] == "request_more_evidence"
 
 def test_human_review_invalid_action():
     resp = client.post("/cases/", json={

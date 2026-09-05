@@ -369,14 +369,14 @@ def investigate(
 
     On any failure, falls back to deterministic recommendation.
     """
-    if settings.mock_verifier:
+    if not settings.anthropic_api_key:
         logger.info("Using MOCK investigation agent for case %s", case_id)
         # Record explicit mock mode event
         from app.db.models import AuditLog
         db.add(AuditLog(
             case_id=case_id,
             step="mock_investigation_mode",
-            detail={"info": "Rule-based investigation pipeline used for demonstration."}
+            detail={"info": "Deterministic safety analysis used because live AI verification is unavailable."}
         ))
         db.commit()
         return _mock_investigate(case_id, db, evidence_types, contradictions_found, completeness)

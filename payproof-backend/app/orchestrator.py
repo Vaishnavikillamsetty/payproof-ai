@@ -294,6 +294,8 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
         # Update case with final scores                                       #
         # ------------------------------------------------------------------ #
         case.status = status
+        case.ai_recommendation = recommendation.recommended_action.value
+        case.contradiction_detected = contradictions_found
         case.completeness_score = score
         case.overall_confidence = round(avg_confidence, 4)
         db.commit()

@@ -10,7 +10,16 @@ from pydantic import ValidationError
 
 from app.agents.schemas import AgentRecommendation, RecommendedAction, RiskLevel, EvidenceStrength, SourceStatus
 from app.agents.tools import execute_tool
+from app.config import settings
 from app.agents.investigation_agent import investigate, _parse_final_json, _deterministic_fallback
+
+
+@pytest.fixture(autouse=True)
+def disable_real_llm():
+    old_key = settings.anthropic_api_key
+    settings.anthropic_api_key = ""
+    yield
+    settings.anthropic_api_key = old_key
 
 # --------------------------------------------------------------------------- #
 # Schema Validation Tests

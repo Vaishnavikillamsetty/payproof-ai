@@ -24,6 +24,10 @@ class CaseResponse(BaseModel):
     merchant_id: str
     amount: float
     status: str
+    ai_recommendation: Optional[str] = None
+    final_action: Optional[str] = None
+    contradiction_detected: bool = False
+    currency: str = "USD"
     completeness_score: Optional[float] = None
     overall_confidence: Optional[float] = None
     created_at: datetime

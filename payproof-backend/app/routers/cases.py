@@ -31,6 +31,13 @@ def create_case(
     # For seeded demo transactions, the backend is authoritative.
     # Automatically override the user's amount with the exact seeded amount.
     demo_amount = get_demo_expected_amount(db, case_in.transaction_id)
+    
+    # Try to fetch currency from db
+    from app.db.models import PaymentGatewayRecord
+    from app.agents.external_systems import _get_base_demo_id
+    base_id = _get_base_demo_id(case_in.transaction_id)
+    pmt = db.query(PaymentGatewayRecord).filter_by(transaction_id=base_id).first()
+    final_currency = pmt.currency if pmt else "USD"
     if demo_amount is not None:
         final_amount = demo_amount
     else:
@@ -44,6 +51,7 @@ def create_case(
         customer_claim=case_in.customer_claim,
         merchant_id=case_in.merchant_id,
         amount=final_amount,
+        currency=final_currency,
         status="new",
     )
     db.add(db_case)
@@ -141,11 +149,13 @@ def review_case(id: UUID, req: HumanReviewRequest, db: Session = Depends(get_db)
     # Map the UI action to a valid case status
     # Note: approve will resolve the case, request_more_evidence / escalate match the DB status enum
     if req.action == "escalate":
-        case.status = "escalate"
+        case.final_action = "escalate"
     elif req.action == "request_more_evidence":
-        case.status = "request_more_evidence"
+        case.final_action = "request_more_evidence"
     elif req.action == "approve":
-        case.status = "resolved"
+        case.final_action = case.ai_recommendation
+        
+    case.status = "resolved"
 
     db.add(AuditLog(
         case_id=case.id,
