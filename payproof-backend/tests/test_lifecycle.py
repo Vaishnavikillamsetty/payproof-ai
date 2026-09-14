@@ -15,3 +15,4 @@ def test_terminal_recommendations_wait_for_human_review():
     assert lifecycle_for_recommendation("CONTEST") == "pending_review"
     assert lifecycle_for_recommendation("APPROVE") == "pending_review"
     assert lifecycle_after_human_review("CONTEST", "approve") == "resolved"
+    assert lifecycle_after_human_review("CONTEST", "contest") == "resolved"

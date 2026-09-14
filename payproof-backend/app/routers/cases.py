@@ -144,18 +144,26 @@ def review_case(id: UUID, req: HumanReviewRequest, db: Session = Depends(get_db)
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
 
-    if req.action not in ["approve", "request_more_evidence", "escalate"]:
+    if req.action not in ["approve", "contest", "request_more_evidence"]:
         raise HTTPException(status_code=400, detail="Invalid action")
 
-    # Keep the human decision and AI recommendation separate. An ESCALATE
-    # recommendation remains escalated even when a reviewer approves it.
-    case.final_action = case.ai_recommendation if req.action == "approve" else req.action
+    existing_decision = db.query(AuditLog).filter(
+        AuditLog.case_id == case.id,
+        AuditLog.step == "human_review_decision",
+    ).first()
+    if existing_decision:
+        raise HTTPException(status_code=409, detail="A human final decision has already been recorded for this case")
+
+    # The selected human action is immutable and independent from the AI
+    # recommendation. An ESCALATE recommendation retains its escalation
+    # lifecycle even if a reviewer selects a terminal action.
+    case.final_action = req.action.upper()
     case.status = lifecycle_after_human_review(case.ai_recommendation, req.action)
 
     db.add(AuditLog(
         case_id=case.id,
         step="human_review_decision",
-        detail={"action": req.action, "notes": req.notes}
+        detail={"action": req.action.upper(), "notes": req.notes}
     ))
     db.commit()
     db.refresh(case)

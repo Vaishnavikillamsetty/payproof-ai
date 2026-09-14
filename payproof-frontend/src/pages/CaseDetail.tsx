@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
 import type { CaseDetail as CaseDetailType, AuditEntry } from '../types'
-import { statusTheme, getAIRecommendation, aiRecommendationLabel, isWebhookOrigin, isDemoCase, formatAmount, lifecycleStatus } from '../utils'
+import { statusTheme, getAIRecommendation, aiRecommendationLabel, isWebhookOrigin, isDemoCase, formatAmount, formatDate, lifecycleStatus } from '../utils'
 import EvidencePanel from '../components/EvidencePanel'
 import AgentActivity from '../components/AgentActivity'
 import ClaimList from '../components/ClaimList'
-import HumanReviewModal from '../components/HumanReviewModal'
 
 interface Props {
   caseId: string
@@ -160,7 +159,8 @@ export default function CaseDetail({ caseId, onBack }: Props) {
   const [data, setData] = useState<{ case: CaseDetailType; audit: AuditEntry[] } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [reviewOpen, setReviewOpen] = useState(false)
+  const [decisionSubmitting, setDecisionSubmitting] = useState<string | null>(null)
+  const [decisionError, setDecisionError] = useState<string | null>(null)
 
   useEffect(() => {
     let isMounted = true
@@ -219,8 +219,23 @@ export default function CaseDetail({ caseId, onBack }: Props) {
   const demo = isDemoCase(c.transaction_id)
   const theme = statusTheme(c.status)
   
-  const needsHuman = ['human_review', 'escalate', 'request_more_evidence', 'strong_case', 'contest', 'accept', 'weak_case'].includes(c.status)
+  const decisionLog = audit.find(a => a.step === 'human_review_decision')
+  const needsHuman = !decisionLog && ['pending_review', 'human_review', 'escalate', 'escalated', 'request_more_evidence', 'evidence_requested', 'strong_case', 'contest', 'accept', 'weak_case'].includes(c.status)
   const contradicted = c.claims.filter(claim => claim.verdict === 'contradicted')
+
+  async function submitFinalDecision(action: 'approve' | 'contest' | 'request_more_evidence') {
+    setDecisionSubmitting(action)
+    setDecisionError(null)
+    try {
+      const updatedCase = await api.reviewCase(c.id, action, '')
+      const updatedAudit = await api.getAudit(c.id)
+      setData({ case: updatedCase, audit: updatedAudit })
+    } catch (err: any) {
+      setDecisionError(err.message)
+    } finally {
+      setDecisionSubmitting(null)
+    }
+  }
 
   return (
     <main style={{ maxWidth: 800, margin: '0 auto', padding: '32px 24px' }}>
@@ -262,31 +277,34 @@ export default function CaseDetail({ caseId, onBack }: Props) {
       {/* 2. AI RECOMMENDATION */}
       <AiRecommendationCard c={c} audit={audit} />
 
-      {/* 3. HUMAN REVIEW CTA */}
-      {needsHuman && (
-        <div style={{ marginBottom: 32 }}>
-          <button
-            type="button"
-            onClick={() => setReviewOpen(true)}
-            style={{
-              padding: '12px 24px', borderRadius: 6, border: '1px solid var(--color-teal)',
-              background: 'rgba(63, 167, 150, 0.1)', color: 'var(--color-teal)',
-              fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em',
-              cursor: 'pointer', textTransform: 'uppercase', width: '100%'
-            }}
-          >
-            Review AI Recommendation
-          </button>
-        </div>
-      )}
-      
-      <HumanReviewModal 
-        c={c} 
-        audit={audit} 
-        isOpen={reviewOpen} 
-        onClose={() => setReviewOpen(false)} 
-        onSuccess={(updated) => setData({ case: updated, audit: data.audit })} 
-      />
+      {/* 3. HUMAN FINAL DECISION */}
+      <section className="card" style={{ padding: '20px 24px', marginBottom: 32, borderLeft: '4px solid var(--color-teal)' }}>
+        <div className="font-mono text-slate" style={{ fontSize: 11, letterSpacing: '0.1em', marginBottom: 8 }}>HUMAN FINAL DECISION</div>
+        <div className="font-mono text-white" style={{ fontSize: 14, marginBottom: 6 }}>AI recommendation: {aiRecommendationLabel(c.ai_recommendation)}</div>
+        <p className="font-body text-slate" style={{ fontSize: 13, margin: '0 0 16px' }}>AI recommendation is advisory. Final action requires human review.</p>
+        {needsHuman ? (
+          <>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              {([
+                ['approve', 'APPROVE', 'var(--color-teal)'],
+                ['contest', 'CONTEST', 'var(--color-teal)'],
+                ['request_more_evidence', 'REQUEST MORE EVIDENCE', 'var(--color-amber)'],
+              ] as const).map(([action, label, color]) => (
+                <button key={action} type="button" disabled={decisionSubmitting !== null} onClick={() => submitFinalDecision(action)} style={{ padding: '10px 14px', borderRadius: 4, border: `1px solid ${color}`, background: 'transparent', color, cursor: decisionSubmitting ? 'wait' : 'pointer', fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600 }}>
+                  {decisionSubmitting === action ? 'SAVING...' : label}
+                </button>
+              ))}
+            </div>
+            {decisionError && <div className="font-body" style={{ color: 'var(--color-red)', fontSize: 12, marginTop: 12 }}>{decisionError}</div>}
+          </>
+        ) : (
+          <div className="font-mono" style={{ fontSize: 14, color: 'var(--color-white)' }}>
+            Human Final Decision: {aiRecommendationLabel(c.final_action)}
+            <span className="text-slate" style={{ marginLeft: 12 }}>• {statusTheme(c.status).label}</span>
+            {decisionLog && <span className="text-slate" style={{ marginLeft: 12 }}>• Recorded {formatDate(decisionLog.timestamp)}</span>}
+          </div>
+        )}
+      </section>
 
       {/* 4. AI INVESTIGATION ACTIVITY */}
       <SectionHeader>AI Investigation Pipeline</SectionHeader>

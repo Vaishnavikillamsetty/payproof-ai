@@ -39,6 +39,7 @@ def lifecycle_after_human_review(recommendation: Optional[str], action: str) -> 
         return "escalated"
     return {
         "approve": "resolved",
+        "contest": "resolved",
         "request_more_evidence": "evidence_requested",
         "escalate": "escalated",
     }[action]
