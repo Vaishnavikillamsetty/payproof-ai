@@ -60,6 +60,7 @@ def create_case(
     db.commit()
     db.refresh(db_case)
 
+    print(f"DIAGNOSTIC - STARTING BACKGROUND INVESTIGATION for {db_case.id}")
     background_tasks.add_task(run_pipeline, db_case.id)
 
     return db_case

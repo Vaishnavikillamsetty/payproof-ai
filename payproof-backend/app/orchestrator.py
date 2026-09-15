@@ -100,6 +100,7 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
     Execute the full evidence-verification pipeline for a case.
     Updates the Case row in-place and writes a complete audit trail.
     """
+    print(f"DIAGNOSTIC - BACKGROUND INVESTIGATION ENTERED for case {case_id}")
     _owns_session = db is None
     if _owns_session:
         db = SessionLocal()
@@ -209,6 +210,7 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
             "duplicate_payment_detected": duplicate_payment_detected,
         })
 
+        print(f"DIAGNOSTIC - CALLING investigation_agent.investigate() for case {case_id}")
         recommendation = investigate(
             case_id=str(case_id),
             db=db,
