@@ -198,50 +198,55 @@ def test_investigate_mock_contradiction_case():
     assert len(res.contradictions) > 0
 
 # --------------------------------------------------------------------------- #
-# Real Agent Mock Tests (Anthropic Mocked)
+# Real Agent Mock Tests (OpenRouter Mocked)
 # --------------------------------------------------------------------------- #
 
-@patch("app.agents.investigation_agent.settings.mock_verifier", False)
-@patch("app.agents.investigation_agent.settings.anthropic_api_key", "fake_key")
-@patch("anthropic.Anthropic")
-def test_run_anthropic_agent_success(mock_anthropic):
-    # Setup mock client
-    mock_client = MagicMock()
-    mock_anthropic.return_value = mock_client
-    
-    # Setup mock response without tool calls
-    mock_response = MagicMock()
-    mock_response.content = [MagicMock(type="text", text=json.dumps({
+@patch("app.agents.investigation_agent.settings.openrouter_api_key", "fake_or_key")
+@patch("app.agents.investigation_agent.execute_tool")
+@patch("app.agents.investigation_agent.httpx.Client")
+def test_run_openrouter_agent_success(mock_httpx_client, mock_execute_tool):
+    """OpenRouter path succeeds and returns the LLM JSON recommendation."""
+    mock_execute_tool.return_value = {"ok": True}
+
+    good_json = json.dumps({
         "recommended_action": "CONTEST",
         "confidence": 0.9,
         "risk_level": "LOW",
         "evidence_strength": "HIGH",
-        "summary": "AI says contest",
+        "summary": "OpenRouter says contest",
         "key_findings": [],
         "missing_evidence": [],
         "contradictions": [],
         "human_approval_required": True,
         "source_status": "COMPLETE"
-    }))]
-    mock_client.messages.create.return_value = mock_response
+    })
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "choices": [{"message": {"content": good_json}}]
+    }
+    mock_httpx_client.return_value.__enter__.return_value.post.return_value = mock_response
 
     res = investigate("case_123", MagicMock(), ["payment", "delivery"], False, 100)
     assert res.recommended_action == RecommendedAction.CONTEST
     assert res.confidence == 0.9
-    assert res.ai_status == "OK"
 
-@patch("app.agents.investigation_agent.settings.mock_verifier", False)
-@patch("app.agents.investigation_agent.settings.anthropic_api_key", "fake_key")
-@patch("anthropic.Anthropic")
-def test_run_anthropic_agent_invalid_json_fallback(mock_anthropic):
-    mock_client = MagicMock()
-    mock_anthropic.return_value = mock_client
-    
+
+@patch("app.agents.investigation_agent.settings.openrouter_api_key", "fake_or_key")
+@patch("app.agents.investigation_agent.execute_tool")
+@patch("app.agents.investigation_agent.httpx.Client")
+def test_run_openrouter_agent_invalid_json_fallback(mock_httpx_client, mock_execute_tool):
+    """If OpenRouter returns malformed JSON, falls back to deterministic."""
+    mock_execute_tool.return_value = {"ok": True}
+
     mock_response = MagicMock()
-    mock_response.content = [MagicMock(type="text", text="Not valid JSON")]
-    mock_client.messages.create.return_value = mock_response
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "choices": [{"message": {"content": "Not valid JSON at all"}}]
+    }
+    mock_httpx_client.return_value.__enter__.return_value.post.return_value = mock_response
 
-    # Even though LLM fails, should fallback to deterministic gracefully
     res = investigate("case_123", MagicMock(), ["payment", "delivery"], False, 100)
     assert res.ai_status == "FALLBACK"
-    assert res.recommended_action == RecommendedAction.CONTEST # Deterministic logic for 100% completeness
+    assert res.recommended_action == RecommendedAction.CONTEST

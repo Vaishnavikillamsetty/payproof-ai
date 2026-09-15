@@ -1,10 +1,11 @@
 """
-DisputeInvestigationAgent — bounded tool-calling AI agent.
+DisputeInvestigationAgent — bounded AI agent.
 
 Architecture:
-  - Uses Anthropic's native tool_use capability (no LangChain)
-  - Bounded to MAX_AGENT_STEPS tool calls to prevent runaway loops
-  - Falls back to deterministic logic if the LLM fails
+  - Uses OpenRouter (openrouter/free) via OpenAI-compatible chat completions
+  - Evidence is gathered directly in Python via existing tool functions
+  - LLM receives a full-context prompt and responds with a JSON recommendation
+  - Falls back to deterministic logic if the LLM fails or returns malformed JSON
   - Outputs a strictly validated AgentRecommendation (Pydantic)
   - Never stores chain-of-thought; only evidence-grounded findings
   - Never writes to the database or performs external actions
@@ -12,8 +13,9 @@ Architecture:
 
 import json
 import logging
+import os
 
-import anthropic
+import httpx
 from sqlalchemy.orm import Session
 from pydantic import ValidationError
 
@@ -26,11 +28,15 @@ from app.agents.schemas import (
     EvidenceStrength,
     SourceStatus,
 )
-from app.agents.tools import TOOL_DEFINITIONS, execute_tool
+from app.agents.tools import execute_tool
 
 logger = logging.getLogger(__name__)
 
 MAX_AGENT_STEPS = 5
+
+OPENROUTER_API_BASE = "https://openrouter.ai/api/v1"
+OPENROUTER_REFERER = "https://payproof-frontend.vercel.app"
+OPENROUTER_TITLE = "PayProof AI"
 
 
 # --------------------------------------------------------------------------- #
@@ -40,24 +46,16 @@ MAX_AGENT_STEPS = 5
 SYSTEM_PROMPT = """\
 You are PayProof AI — a dispute investigation agent for Razorpay merchants.
 
-GOAL: Investigate a payment dispute by gathering available evidence using the tools provided, checking verified facts, identifying missing evidence, detecting contradictions, and recommending the safest next action.
+GOAL: Investigate a payment dispute by reviewing the provided evidence data, identifying contradictions, and recommending the safest next action.
 
 RULES:
-1. Use the provided tools to gather information. Do NOT invent evidence.
-2. Call get_case_details first to understand the dispute.
-3. Then call search_case_evidence to see what evidence exists.
-4. Call get_payment_details and get_refund_status if you need payment/refund data.
-5. Call get_rule_flags to see deterministic rule results.
-6. After gathering enough information, provide your final recommendation.
+1. Base your recommendation ONLY on the evidence data provided in this message.
+2. Do NOT invent evidence.
+3. If evidence contradicts the customer claim, note it clearly.
+4. If evidence is missing, recommend REQUEST_MORE_EVIDENCE.
+5. Always set human_approval_required to true.
 
-IMPORTANT CONSTRAINTS:
-- You are read-only. You cannot modify data or submit disputes.
-- Base your recommendation ONLY on the evidence returned by tools.
-- If evidence contradicts the customer claim, note it clearly.
-- If evidence is missing, recommend REQUEST_MORE_EVIDENCE.
-- Always set human_approval_required to true.
-
-When you have enough information, respond with a JSON object (no markdown fences) matching this exact schema:
+When you have enough information, respond with ONLY a JSON object matching this exact schema (no markdown fences, no commentary):
 
 {
   "recommended_action": "CONTEST" | "ACCEPT" | "ESCALATE" | "REQUEST_MORE_EVIDENCE",
@@ -101,7 +99,7 @@ def _deterministic_fallback(
         strength = EvidenceStrength.MEDIUM
         summary = "Contradicting evidence detected. Deterministic fallback recommends escalation."
         confidence = 0.4
-    elif "refund" in evidence_types: # Example rule if refund check exists
+    elif "refund" in evidence_types:
         action = RecommendedAction.ACCEPT
         risk = RiskLevel.LOW
         strength = EvidenceStrength.HIGH
@@ -114,7 +112,6 @@ def _deterministic_fallback(
         summary = "Sufficient verified evidence available. Deterministic fallback recommends contesting."
         confidence = 0.7
     else:
-        # For completeness < 50 (including 0), it's weak or empty, so we request more.
         action = RecommendedAction.REQUEST_MORE_EVIDENCE
         risk = RiskLevel.MEDIUM if completeness >= 30 else RiskLevel.HIGH
         strength = EvidenceStrength.LOW
@@ -147,7 +144,7 @@ def _deterministic_fallback(
 
 
 # --------------------------------------------------------------------------- #
-# Mock agent (when MOCK_VERIFIER=true)
+# Mock agent (when no OpenRouter key is configured)
 # --------------------------------------------------------------------------- #
 
 def _mock_investigate(
@@ -207,7 +204,6 @@ def _mock_investigate(
             ai_status="OK",
         )
     else:
-        # Empty or weak case
         return AgentRecommendation(
             recommended_action=RecommendedAction.REQUEST_MORE_EVIDENCE,
             confidence=0.55 if completeness >= 30 else 0.2,
@@ -224,148 +220,100 @@ def _mock_investigate(
 
 
 # --------------------------------------------------------------------------- #
-# Real Anthropic tool-calling agent
+# JSON parsing helper
 # --------------------------------------------------------------------------- #
 
 def _parse_final_json(text: str) -> AgentRecommendation:
-    """Parse and validate the agent's final JSON output."""
-    # Strip markdown fences if present
+    """Parse and validate the agent's final JSON output. Strips markdown fences if present."""
     clean = text.strip()
+    # Strip ```json ... ``` or ``` ... ``` fences
     if clean.startswith("```"):
         lines = clean.split("\n")
         lines = [l for l in lines if not l.strip().startswith("```")]
         clean = "\n".join(lines).strip()
 
+    # Find the JSON object boundaries in case the model added commentary
+    start = clean.find("{")
+    end = clean.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        clean = clean[start:end + 1]
+
     data = json.loads(clean)
     return AgentRecommendation(**data)
 
 
-def _run_anthropic_agent(case_id: str, db: Session) -> AgentRecommendation:
+# --------------------------------------------------------------------------- #
+# OpenRouter AI agent
+# --------------------------------------------------------------------------- #
+
+def _run_openrouter_agent(case_id: str, db: Session) -> AgentRecommendation:
     """
-    Bounded Anthropic tool-calling loop.
-    The model calls tools, we execute them and feed results back.
-    After MAX_AGENT_STEPS tool calls OR when the model stops calling tools,
-    we parse the final text output as AgentRecommendation JSON.
+    Gather evidence via Python tool calls, then send a single OpenRouter
+    chat completion request with the full evidence context and parse the
+    JSON recommendation from the response.
     """
-    
-    # --- DIAGNOSTICS FOR RENDER ---
-    import os
-    env_key = os.environ.get('ANTHROPIC_API_KEY', 'NOT_SET')
-    print("DIAGNOSTIC - ANTHROPIC_API_KEY in os.environ: " + str("SET_AND_HIDDEN" if env_key != 'NOT_SET' and len(env_key) > 5 else env_key))
-    print("DIAGNOSTIC - settings.anthropic_api_key configured: " + str(bool(settings.anthropic_api_key)))
-    print("DIAGNOSTIC - settings.anthropic_model: " + str(settings.anthropic_model))
-    print("DIAGNOSTIC - settings.mock_verifier: " + str(settings.mock_verifier))
-    # ------------------------------
+    print("DIAGNOSTIC - OpenRouter request started for case " + str(case_id))
 
-    if not settings.anthropic_api_key:
-        raise RuntimeError("ANTHROPIC_API_KEY is not configured")
+    # --- Gather evidence directly via tool functions ---
+    evidence_data = {}
+    tool_names = ["get_case_details", "search_case_evidence", "get_payment_details", "get_refund_status", "get_rule_flags"]
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    for tool_name in tool_names:
+        try:
+            result = execute_tool(tool_name, {"case_id": str(case_id)}, db)
+            evidence_data[tool_name] = result
+        except Exception as e:
+            evidence_data[tool_name] = {"error": str(e)}
 
-    messages = [
-        {
-            "role": "user",
-            "content": f"Investigate dispute case {case_id}. Start by calling get_case_details, then gather evidence and rule flags, and provide your structured recommendation.",
-        }
-    ]
-
-    # Convert our tool definitions to Anthropic's format
-    anthropic_tools = [
-        {
-            "name": t["name"],
-            "description": t["description"],
-            "input_schema": t["input_schema"],
-        }
-        for t in TOOL_DEFINITIONS
-    ]
-
-    steps_used = 0
-
-    from app.db.models import AuditLog
-    
-    def _agent_audit(step_name: str, detail: dict):
-        entry = AuditLog(case_id=case_id, step=step_name, detail=detail)
-        db.add(entry)
-        db.commit()
-
-    while steps_used < MAX_AGENT_STEPS:
-        response = client.messages.create(
-            model=settings.anthropic_model,
-            max_tokens=2048,
-            system=SYSTEM_PROMPT,
-            messages=messages,
-            tools=anthropic_tools,
-        )
-
-        # Check if there are tool_use blocks
-        tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
-
-        if not tool_use_blocks:
-            # Model is done — extract final text
-            text_blocks = [b.text for b in response.content if hasattr(b, "text")]
-            final_text = "\n".join(text_blocks)
-            return _parse_final_json(final_text)
-
-        # Process tool calls
-        # First, add the assistant message with all content blocks
-        messages.append({"role": "assistant", "content": response.content})
-
-        # Then create tool results
-        tool_results = []
-        for block in tool_use_blocks:
-            steps_used += 1
-            logger.info("Agent step %d/%d: calling tool %s", steps_used, MAX_AGENT_STEPS, block.name)
-
-            try:
-                result = execute_tool(block.name, block.input, db)
-                _agent_audit("agent_tool_called", {
-                    "tool": block.name,
-                    "case_id": case_id,
-                    "status": "success"
-                })
-            except ValueError as e:
-                result = {"error": str(e)}
-                _agent_audit("agent_tool_called", {
-                    "tool": block.name,
-                    "case_id": case_id,
-                    "status": "failure",
-                    "error": str(e)
-                })
-            except Exception as e:
-                print("DIAGNOSTIC - Anthropic request failed (Exception): " + str(e))
-                logger.error("Tool %s failed: %s", block.name, e)
-                result = {"error": f"Tool execution failed: {type(e).__name__}"}
-                _agent_audit("agent_tool_called", {
-                    "tool": block.name,
-                    "case_id": case_id,
-                    "status": "failure",
-                    "error": type(e).__name__
-                })
-
-            tool_results.append({
-                "type": "tool_result",
-                "tool_use_id": block.id,
-                "content": json.dumps(result, default=str),
-            })
-
-        messages.append({"role": "user", "content": tool_results})
-
-    # If we exhausted MAX_AGENT_STEPS, force one final completion without tools
-    messages.append({
-        "role": "user",
-        "content": "You have reached the maximum number of tool calls. Based on the information you have gathered so far, provide your final structured JSON recommendation now.",
-    })
-
-    response = client.messages.create(
-        model=settings.anthropic_model,
-        max_tokens=2048,
-        system=SYSTEM_PROMPT,
-        messages=messages,
+    # --- Build context summary for the LLM ---
+    context = json.dumps(evidence_data, indent=2, default=str)
+    user_message = (
+        f"Investigate this payment dispute. Here is all available evidence data:\n\n"
+        f"{context}\n\n"
+        f"Based on this evidence, provide your structured JSON recommendation."
     )
 
-    text_blocks = [b.text for b in response.content if hasattr(b, "text")]
-    final_text = "\n".join(text_blocks)
-    return _parse_final_json(final_text)
+    model = settings.openrouter_model or "openrouter/free"
+
+    headers = {
+        "Authorization": f"Bearer {settings.openrouter_api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": OPENROUTER_REFERER,
+        "X-Title": OPENROUTER_TITLE,
+    }
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_message},
+        ],
+        "max_tokens": 1024,
+    }
+
+    with httpx.Client(timeout=60.0) as client:
+        response = client.post(
+            f"{OPENROUTER_API_BASE}/chat/completions",
+            headers=headers,
+            json=payload,
+        )
+
+    if response.status_code != 200:
+        raise RuntimeError(
+            f"OpenRouter returned HTTP {response.status_code}: {response.text[:300]}"
+        )
+
+    response_data = response.json()
+    choices = response_data.get("choices", [])
+    if not choices:
+        raise RuntimeError("OpenRouter response contained no choices")
+
+    content = choices[0].get("message", {}).get("content", "")
+    if not content or not content.strip():
+        raise RuntimeError("OpenRouter returned empty content")
+
+    print("DIAGNOSTIC - OpenRouter request succeeded for case " + str(case_id))
+    return _parse_final_json(content)
 
 
 # --------------------------------------------------------------------------- #
@@ -383,25 +331,18 @@ def investigate(
     """
     Run the dispute investigation agent.
 
-    Uses MOCK_VERIFIER setting to choose between:
-      - Mock agent (deterministic, no API cost)
-      - Real Anthropic tool-calling agent
-
+    If OPENROUTER_API_KEY is configured, uses the live OpenRouter AI agent.
+    Otherwise falls back to the deterministic mock agent.
     On any failure, falls back to deterministic recommendation.
     """
-    
-    # --- DIAGNOSTICS FOR RENDER ---
-    import os
-    env_key = os.environ.get('ANTHROPIC_API_KEY', 'NOT_SET')
-    print("DIAGNOSTIC - ANTHROPIC_API_KEY in os.environ: " + str("SET_AND_HIDDEN" if env_key != 'NOT_SET' and len(env_key) > 5 else env_key))
-    print("DIAGNOSTIC - settings.anthropic_api_key configured: " + str(bool(settings.anthropic_api_key)))
-    print("DIAGNOSTIC - settings.anthropic_model: " + str(settings.anthropic_model))
+    # --- DIAGNOSTICS ---
+    print("DIAGNOSTIC - OPENROUTER_API_KEY configured: " + str(bool(settings.openrouter_api_key)))
+    print("DIAGNOSTIC - OPENROUTER_MODEL: " + str(settings.openrouter_model))
     print("DIAGNOSTIC - settings.mock_verifier: " + str(settings.mock_verifier))
-    # ------------------------------
+    # -------------------
 
-    if not settings.anthropic_api_key:
-        logger.info("Using MOCK investigation agent for case %s", case_id)
-        # Record explicit mock mode event
+    if not settings.openrouter_api_key:
+        logger.info("No OPENROUTER_API_KEY — using mock investigation agent for case %s", case_id)
         from app.db.models import AuditLog
         db.add(AuditLog(
             case_id=case_id,
@@ -412,17 +353,12 @@ def investigate(
         return _mock_investigate(case_id, db, evidence_types, contradictions_found, completeness, duplicate_payment_detected)
 
     try:
-        print("DIAGNOSTIC - Starting Anthropic investigation agent for case " + str(case_id))
-        return _run_anthropic_agent(case_id, db)
+        return _run_openrouter_agent(case_id, db)
     except (json.JSONDecodeError, ValidationError) as e:
-        print("DIAGNOSTIC - Anthropic request failed (validation): " + str(e))
-        logger.error("Agent output validation failed for case %s: %s", case_id, e)
-        return _deterministic_fallback(evidence_types, contradictions_found, completeness, duplicate_payment_detected)
-    except anthropic.APIError as e:
-        print("DIAGNOSTIC - Anthropic request failed (API Error): " + str(e))
-        logger.error("Anthropic API error for case %s: %s", case_id, e)
+        print("DIAGNOSTIC - OpenRouter request failed (JSON/Validation): " + str(e))
+        logger.error("OpenRouter agent output validation failed for case %s: %s", case_id, e)
         return _deterministic_fallback(evidence_types, contradictions_found, completeness, duplicate_payment_detected)
     except Exception as e:
-        print("DIAGNOSTIC - Anthropic request failed (Exception): " + str(e))
-        logger.error("Agent failed for case %s: %s", case_id, e)
+        print("DIAGNOSTIC - OpenRouter request failed: " + str(e))
+        logger.error("OpenRouter agent failed for case %s: %s", case_id, e)
         return _deterministic_fallback(evidence_types, contradictions_found, completeness, duplicate_payment_detected)
