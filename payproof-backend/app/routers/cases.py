@@ -24,6 +24,7 @@ def create_case(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
+    print(f"DIAGNOSTIC - CASE CREATE POST RECEIVED for tx: {case_in.transaction_id}")
     """
     Submit a new dispute.
     """
