@@ -251,10 +251,10 @@ def _run_anthropic_agent(case_id: str, db: Session) -> AgentRecommendation:
     # --- DIAGNOSTICS FOR RENDER ---
     import os
     env_key = os.environ.get('ANTHROPIC_API_KEY', 'NOT_SET')
-    logger.info("DIAGNOSTIC - ANTHROPIC_API_KEY in os.environ: %s", "SET_AND_HIDDEN" if env_key != 'NOT_SET' and len(env_key) > 5 else env_key)
-    logger.info("DIAGNOSTIC - settings.anthropic_api_key configured: %s", bool(settings.anthropic_api_key))
-    logger.info("DIAGNOSTIC - settings.anthropic_model: %s", settings.anthropic_model)
-    logger.info("DIAGNOSTIC - settings.mock_verifier: %s", settings.mock_verifier)
+    print("DIAGNOSTIC - ANTHROPIC_API_KEY in os.environ: " + str("SET_AND_HIDDEN" if env_key != 'NOT_SET' and len(env_key) > 5 else env_key))
+    print("DIAGNOSTIC - settings.anthropic_api_key configured: " + str(bool(settings.anthropic_api_key)))
+    print("DIAGNOSTIC - settings.anthropic_model: " + str(settings.anthropic_model))
+    print("DIAGNOSTIC - settings.mock_verifier: " + str(settings.mock_verifier))
     # ------------------------------
 
     if not settings.anthropic_api_key:
@@ -332,7 +332,7 @@ def _run_anthropic_agent(case_id: str, db: Session) -> AgentRecommendation:
                     "error": str(e)
                 })
             except Exception as e:
-        logger.error("DIAGNOSTIC - Anthropic request failed (Exception): %s", e)
+                print("DIAGNOSTIC - Anthropic request failed (Exception): " + str(e))
                 logger.error("Tool %s failed: %s", block.name, e)
                 result = {"error": f"Tool execution failed: {type(e).__name__}"}
                 _agent_audit("agent_tool_called", {
@@ -393,10 +393,10 @@ def investigate(
     # --- DIAGNOSTICS FOR RENDER ---
     import os
     env_key = os.environ.get('ANTHROPIC_API_KEY', 'NOT_SET')
-    logger.info("DIAGNOSTIC - ANTHROPIC_API_KEY in os.environ: %s", "SET_AND_HIDDEN" if env_key != 'NOT_SET' and len(env_key) > 5 else env_key)
-    logger.info("DIAGNOSTIC - settings.anthropic_api_key configured: %s", bool(settings.anthropic_api_key))
-    logger.info("DIAGNOSTIC - settings.anthropic_model: %s", settings.anthropic_model)
-    logger.info("DIAGNOSTIC - settings.mock_verifier: %s", settings.mock_verifier)
+    print("DIAGNOSTIC - ANTHROPIC_API_KEY in os.environ: " + str("SET_AND_HIDDEN" if env_key != 'NOT_SET' and len(env_key) > 5 else env_key))
+    print("DIAGNOSTIC - settings.anthropic_api_key configured: " + str(bool(settings.anthropic_api_key)))
+    print("DIAGNOSTIC - settings.anthropic_model: " + str(settings.anthropic_model))
+    print("DIAGNOSTIC - settings.mock_verifier: " + str(settings.mock_verifier))
     # ------------------------------
 
     if not settings.anthropic_api_key:
@@ -412,17 +412,17 @@ def investigate(
         return _mock_investigate(case_id, db, evidence_types, contradictions_found, completeness, duplicate_payment_detected)
 
     try:
-        logger.info("DIAGNOSTIC - Starting Anthropic investigation agent for case %s", case_id)
+        print("DIAGNOSTIC - Starting Anthropic investigation agent for case " + str(case_id))
         return _run_anthropic_agent(case_id, db)
     except (json.JSONDecodeError, ValidationError) as e:
-        logger.error("DIAGNOSTIC - Anthropic request failed (validation): %s", e)
+        print("DIAGNOSTIC - Anthropic request failed (validation): " + str(e))
         logger.error("Agent output validation failed for case %s: %s", case_id, e)
         return _deterministic_fallback(evidence_types, contradictions_found, completeness, duplicate_payment_detected)
     except anthropic.APIError as e:
-        logger.error("DIAGNOSTIC - Anthropic request failed (API Error): %s", e)
+        print("DIAGNOSTIC - Anthropic request failed (API Error): " + str(e))
         logger.error("Anthropic API error for case %s: %s", case_id, e)
         return _deterministic_fallback(evidence_types, contradictions_found, completeness, duplicate_payment_detected)
     except Exception as e:
-        logger.error("DIAGNOSTIC - Anthropic request failed (Exception): %s", e)
+        print("DIAGNOSTIC - Anthropic request failed (Exception): " + str(e))
         logger.error("Agent failed for case %s: %s", case_id, e)
         return _deterministic_fallback(evidence_types, contradictions_found, completeness, duplicate_payment_detected)
