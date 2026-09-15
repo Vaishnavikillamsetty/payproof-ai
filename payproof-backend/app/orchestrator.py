@@ -169,7 +169,8 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
             ]
         })
 
-        contradictions_found = any(trig for _, trig, _ in rule_results)
+        contradictions_found = any(trig for name, trig, _ in rule_results if name != 'duplicate_payment_detected')
+        duplicate_payment_detected = any(trig for name, trig, _ in rule_results if name == 'duplicate_payment_detected')
 
         # ------------------------------------------------------------------ #
         # Step 3: Completeness score                                          #
@@ -205,6 +206,7 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
             "evidence_types": evidence_types,
             "completeness": score,
             "contradictions_found": contradictions_found,
+            "duplicate_payment_detected": duplicate_payment_detected,
         })
 
         recommendation = investigate(
@@ -213,6 +215,7 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
             evidence_types=evidence_types,
             contradictions_found=contradictions_found,
             completeness=score,
+            duplicate_payment_detected=duplicate_payment_detected,
         )
 
         _audit(db, case_id, "agent_recommendation_created", {
@@ -247,6 +250,7 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
             "agent_confidence": avg_confidence,
             "agent_recommendation": recommendation.recommended_action.value,
             "contradictions_found": contradictions_found,
+            "duplicate_payment_detected": duplicate_payment_detected,
         })
 
         # ------------------------------------------------------------------ #

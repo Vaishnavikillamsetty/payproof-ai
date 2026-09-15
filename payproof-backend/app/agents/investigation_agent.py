@@ -84,11 +84,18 @@ def _deterministic_fallback(
     evidence_types: list[str],
     contradictions_found: bool,
     completeness: int,
+    duplicate_payment_detected: bool = False,
 ) -> AgentRecommendation:
     """
     Pure rule-based recommendation when the AI is unavailable.
     """
-    if contradictions_found:
+    if duplicate_payment_detected:
+        action = RecommendedAction.ACCEPT
+        risk = RiskLevel.LOW
+        strength = EvidenceStrength.HIGH
+        summary = "Multiple successful payments detected for duplicate charge claim. Recommending ACCEPT/refund."
+        confidence = 0.9
+    elif contradictions_found:
         action = RecommendedAction.ESCALATE
         risk = RiskLevel.HIGH
         strength = EvidenceStrength.MEDIUM
@@ -149,6 +156,7 @@ def _mock_investigate(
     evidence_types: list[str],
     contradictions_found: bool,
     completeness: int,
+    duplicate_payment_detected: bool = False,
 ) -> AgentRecommendation:
     """
     Deterministic mock agent for demos — no LLM call.
@@ -359,6 +367,7 @@ def investigate(
     evidence_types: list[str],
     contradictions_found: bool,
     completeness: int,
+    duplicate_payment_detected: bool = False,
 ) -> AgentRecommendation:
     """
     Run the dispute investigation agent.
@@ -379,17 +388,17 @@ def investigate(
             detail={"info": "Deterministic safety analysis used because live AI verification is unavailable."}
         ))
         db.commit()
-        return _mock_investigate(case_id, db, evidence_types, contradictions_found, completeness)
+        return _mock_investigate(case_id, db, evidence_types, contradictions_found, completeness, duplicate_payment_detected)
 
     try:
         logger.info("Starting Anthropic investigation agent for case %s", case_id)
         return _run_anthropic_agent(case_id, db)
     except (json.JSONDecodeError, ValidationError) as e:
         logger.error("Agent output validation failed for case %s: %s", case_id, e)
-        return _deterministic_fallback(evidence_types, contradictions_found, completeness)
+        return _deterministic_fallback(evidence_types, contradictions_found, completeness, duplicate_payment_detected)
     except anthropic.APIError as e:
         logger.error("Anthropic API error for case %s: %s", case_id, e)
-        return _deterministic_fallback(evidence_types, contradictions_found, completeness)
+        return _deterministic_fallback(evidence_types, contradictions_found, completeness, duplicate_payment_detected)
     except Exception as e:
         logger.error("Agent failed for case %s: %s", case_id, e)
-        return _deterministic_fallback(evidence_types, contradictions_found, completeness)
+        return _deterministic_fallback(evidence_types, contradictions_found, completeness, duplicate_payment_detected)

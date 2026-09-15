@@ -71,4 +71,11 @@ def check_timeline_rules(case, evidence_list):
              flags.append(("cancellation_without_record", True,
                             "Claim is subscription not cancelled but no cancellation communication found"))
 
+
+    # 5. Duplicate Payment
+    if case.dispute_reason == "duplicate_charge":
+        successful_payments = [e for e in payment_evts if e.content.get("status") == "success"]
+        if len(successful_payments) > 1:
+            flags.append(("duplicate_payment_detected", True, "Multiple successful payment records found for this duplicate charge claim"))
+
     return flags
