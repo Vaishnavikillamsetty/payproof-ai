@@ -247,6 +247,16 @@ def _run_anthropic_agent(case_id: str, db: Session) -> AgentRecommendation:
     After MAX_AGENT_STEPS tool calls OR when the model stops calling tools,
     we parse the final text output as AgentRecommendation JSON.
     """
+    
+    # --- DIAGNOSTICS FOR RENDER ---
+    import os
+    env_key = os.environ.get('ANTHROPIC_API_KEY', 'NOT_SET')
+    logger.info("DIAGNOSTIC - ANTHROPIC_API_KEY in os.environ: %s", "SET_AND_HIDDEN" if env_key != 'NOT_SET' and len(env_key) > 5 else env_key)
+    logger.info("DIAGNOSTIC - settings.anthropic_api_key configured: %s", bool(settings.anthropic_api_key))
+    logger.info("DIAGNOSTIC - settings.anthropic_model: %s", settings.anthropic_model)
+    logger.info("DIAGNOSTIC - settings.mock_verifier: %s", settings.mock_verifier)
+    # ------------------------------
+
     if not settings.anthropic_api_key:
         raise RuntimeError("ANTHROPIC_API_KEY is not configured")
 
@@ -322,6 +332,7 @@ def _run_anthropic_agent(case_id: str, db: Session) -> AgentRecommendation:
                     "error": str(e)
                 })
             except Exception as e:
+        logger.error("DIAGNOSTIC - Anthropic request failed (Exception): %s", e)
                 logger.error("Tool %s failed: %s", block.name, e)
                 result = {"error": f"Tool execution failed: {type(e).__name__}"}
                 _agent_audit("agent_tool_called", {
@@ -378,6 +389,16 @@ def investigate(
 
     On any failure, falls back to deterministic recommendation.
     """
+    
+    # --- DIAGNOSTICS FOR RENDER ---
+    import os
+    env_key = os.environ.get('ANTHROPIC_API_KEY', 'NOT_SET')
+    logger.info("DIAGNOSTIC - ANTHROPIC_API_KEY in os.environ: %s", "SET_AND_HIDDEN" if env_key != 'NOT_SET' and len(env_key) > 5 else env_key)
+    logger.info("DIAGNOSTIC - settings.anthropic_api_key configured: %s", bool(settings.anthropic_api_key))
+    logger.info("DIAGNOSTIC - settings.anthropic_model: %s", settings.anthropic_model)
+    logger.info("DIAGNOSTIC - settings.mock_verifier: %s", settings.mock_verifier)
+    # ------------------------------
+
     if not settings.anthropic_api_key:
         logger.info("Using MOCK investigation agent for case %s", case_id)
         # Record explicit mock mode event
@@ -391,14 +412,17 @@ def investigate(
         return _mock_investigate(case_id, db, evidence_types, contradictions_found, completeness, duplicate_payment_detected)
 
     try:
-        logger.info("Starting Anthropic investigation agent for case %s", case_id)
+        logger.info("DIAGNOSTIC - Starting Anthropic investigation agent for case %s", case_id)
         return _run_anthropic_agent(case_id, db)
     except (json.JSONDecodeError, ValidationError) as e:
+        logger.error("DIAGNOSTIC - Anthropic request failed (validation): %s", e)
         logger.error("Agent output validation failed for case %s: %s", case_id, e)
         return _deterministic_fallback(evidence_types, contradictions_found, completeness, duplicate_payment_detected)
     except anthropic.APIError as e:
+        logger.error("DIAGNOSTIC - Anthropic request failed (API Error): %s", e)
         logger.error("Anthropic API error for case %s: %s", case_id, e)
         return _deterministic_fallback(evidence_types, contradictions_found, completeness, duplicate_payment_detected)
     except Exception as e:
+        logger.error("DIAGNOSTIC - Anthropic request failed (Exception): %s", e)
         logger.error("Agent failed for case %s: %s", case_id, e)
         return _deterministic_fallback(evidence_types, contradictions_found, completeness, duplicate_payment_detected)
