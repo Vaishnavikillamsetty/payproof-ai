@@ -20,7 +20,6 @@ interface Props {
   onBack: () => void
 }
 
-
 function formatDisputeReason(reason: string) {
   return reason.replace(/_/g, ' ').replace(/ \w/g, (c) => c.toUpperCase())
 }
@@ -242,7 +241,7 @@ export default function CaseDetail({ caseId, onBack }: Props) {
 
   if (error || !data) {
     return (
-      <main style={{ maxWidth: 640, margin: '60px auto', padding: '0 24px' }}>
+      <main style={{ width: 'min(100% - 48px, 640px)', margin: '60px auto', padding: '0 24px' }}>
         <div
           className="card"
           style={{
@@ -387,233 +386,251 @@ export default function CaseDetail({ caseId, onBack }: Props) {
   const contradicted = c.claims ? c.claims.filter((claim) => claim.verdict === 'contradicted') : []
 
   return (
-    <main style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 20px 48px' }}>
-      {/* ── TOP UTILITY BAR: Back + Badges ── */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 16,
-          flexWrap: 'wrap',
-          gap: 12,
-        }}
-      >
-        <button
-          onClick={onBack}
-          style={{
-            background: 'var(--color-ink-mid)',
-            border: '1px solid var(--color-ink-border)',
-            padding: '8px 16px',
-            borderRadius: 7,
-            color: 'var(--color-slate-light)',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 12,
-            fontWeight: 600,
-            letterSpacing: '0.04em',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--color-white)'
-            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-slate)'
-          }}
-          onMouseLeave={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--color-slate-light)'
-            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-ink-border)'
-          }}
-        >
-          ← Back to Dashboard
-        </button>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <DataSourceBadge fromWebhook={fromWebhook} isDemo={demo} txn={c.transaction_id} />
-          <span
-            className="font-mono"
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              padding: '3px 10px',
-              borderRadius: 5,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              background: `color-mix(in srgb, ${theme.dot} 14%, transparent)`,
-              color: theme.dot,
-              border: `1px solid color-mix(in srgb, ${theme.dot} 30%, transparent)`,
-            }}
-          >
-            {theme.label}
-          </span>
-          {c.contradiction_detected && (
-            <span
-              className="badge"
-              style={{
-                background: 'rgba(224, 82, 82, 0.15)',
-                color: 'var(--color-red)',
-                border: '1px solid rgba(224, 82, 82, 0.35)',
-              }}
-            >
-              ⚠ CONTRADICTION DETECTED
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* ── INVESTIGATION WORKSPACE HEADER CARD ── */}
-      <div
-        className="card"
-        style={{
-          padding: '22px 26px',
-          marginBottom: 20,
-          background: 'linear-gradient(180deg, #141E2D 0%, #0F1624 100%)',
-          border: '1px solid var(--color-ink-border)',
-          borderRadius: 10,
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20 }}>
-          {/* Left Metadata Block */}
-          <div style={{ flex: 1, minWidth: 280 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
-              <span
-                className="font-mono text-slate"
-                style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}
-              >
-                Case File
-              </span>
-              <span
-                className="font-mono"
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: 'var(--color-teal)',
-                  background: 'rgba(54, 198, 174, 0.08)',
-                  padding: '2px 8px',
-                  borderRadius: 5,
-                  border: '1px solid rgba(54, 198, 174, 0.25)',
-                  letterSpacing: '0.04em',
-                }}
-              >
-                {c.transaction_id}
-              </span>
-            </div>
-
-            <h1
-              className="font-body text-white"
-              style={{
-                fontSize: 24,
-                fontWeight: 700,
-                margin: '0 0 10px 0',
-                lineHeight: 1.25,
-                letterSpacing: '-0.01em',
-              }}
-            >
-              {formatDisputeReason(c.dispute_reason)}
-            </h1>
-
-            {/* Context pills strip */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', fontSize: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span className="font-mono text-slate" style={{ textTransform: 'uppercase', fontSize: 11 }}>
-                  Merchant:
-                </span>
-                <span className="font-mono text-white" style={{ fontWeight: 600 }}>
-                  {c.merchant_id.toUpperCase()}
-                </span>
-              </div>
-              <span style={{ color: 'var(--color-ink-border)' }}>•</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span className="font-mono text-slate" style={{ textTransform: 'uppercase', fontSize: 11 }}>
-                  Dispute Filed:
-                </span>
-                <span className="font-mono text-slate-light">{formatDate(c.created_at)}</span>
-              </div>
-              {c.decision_timestamp && (
-                <>
-                  <span style={{ color: 'var(--color-ink-border)' }}>•</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span className="font-mono text-slate" style={{ textTransform: 'uppercase', fontSize: 11 }}>
-                      Decided:
-                    </span>
-                    <span className="font-mono text-slate-light">{formatDate(c.decision_timestamp)}</span>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Right Highlight Box: Amount At Risk */}
-          <div
-            style={{
-              background: 'var(--color-ink)',
-              border: '1px solid var(--color-ink-border)',
-              borderRadius: 8,
-              padding: '12px 20px',
-              textAlign: 'right',
-              minWidth: 190,
-              boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-            }}
-          >
-            <span
-              className="font-mono text-slate"
-              style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}
-            >
-              Dispute Amount
-            </span>
-            <div
-              className="font-mono text-white"
-              style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15 }}
-            >
-              {formatAmount(c.amount, c.currency)}
-            </div>
-            <span
-              className="font-mono"
-              style={{ fontSize: 11, color: 'var(--color-teal)', fontWeight: 600, marginTop: 4, display: 'block' }}
-            >
-              {c.currency || 'USD'} Capital Exposure
-            </span>
-          </div>
-        </div>
-
-        {/* Customer claim statement callout */}
+    <main
+      style={{
+        width: 'min(100% - 48px, 1200px)',
+        margin: '0 auto',
+        padding: '24px 0 64px',
+      }}
+    >
+      {/* ══════════════════════════════════════════════════════════════════════
+          PART A: CASE HEADER
+          - Back to Dashboard navigation
+          - Case ID & Dispute Reason
+          - Transaction Amount and Currency
+          - Merchant information
+          - Demo indicator & Lifecycle status
+          - Customer Claim allegation callout
+      ════════════════════════════════════════════════════════════════════════ */}
+      <div style={{ marginBottom: 24 }}>
+        {/* Top utility row */}
         <div
           style={{
-            marginTop: 18,
-            padding: '12px 16px',
-            background: 'var(--color-ink-mid)',
-            borderRadius: 7,
-            borderLeft: '3px solid var(--color-teal)',
-            border: '1px solid var(--color-ink-border)',
-            borderLeftWidth: 3,
-            borderLeftColor: 'var(--color-teal)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 16,
+            flexWrap: 'wrap',
+            gap: 12,
           }}
         >
-          <div
-            className="font-mono text-slate"
-            style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 3 }}
+          <button
+            onClick={onBack}
+            style={{
+              background: 'var(--color-ink-mid)',
+              border: '1px solid var(--color-ink-border)',
+              padding: '8px 16px',
+              borderRadius: 7,
+              color: 'var(--color-slate-light)',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: '0.04em',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--color-white)'
+              ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-slate)'
+            }}
+            onMouseLeave={(e) => {
+              ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--color-slate-light)'
+              ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-ink-border)'
+            }}
           >
-            Customer Claim Statement (Allegation)
+            ← Back to Dashboard
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <DataSourceBadge fromWebhook={fromWebhook} isDemo={demo} txn={c.transaction_id} />
+            <span
+              className="font-mono"
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                padding: '3px 10px',
+                borderRadius: 5,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                background: `color-mix(in srgb, ${theme.dot} 14%, transparent)`,
+                color: theme.dot,
+                border: `1px solid color-mix(in srgb, ${theme.dot} 30%, transparent)`,
+              }}
+            >
+              {theme.label}
+            </span>
+            {c.contradiction_detected && (
+              <span
+                className="badge"
+                style={{
+                  background: 'rgba(224, 82, 82, 0.15)',
+                  color: 'var(--color-red)',
+                  border: '1px solid rgba(224, 82, 82, 0.35)',
+                }}
+              >
+                ⚠ CONTRADICTION DETECTED
+              </span>
+            )}
           </div>
-          <p
-            className="font-body text-white"
-            style={{ fontSize: 13, margin: 0, lineHeight: 1.5, opacity: 0.92, fontStyle: 'italic' }}
+        </div>
+
+        {/* Case Header Card */}
+        <div
+          className="card"
+          style={{
+            padding: '24px 28px',
+            background: 'linear-gradient(180deg, #141E2D 0%, #0F1624 100%)',
+            border: '1px solid var(--color-ink-border)',
+            borderRadius: 10,
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20 }}>
+            {/* Title & Metadata */}
+            <div style={{ flex: 1, minWidth: 280 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+                <span
+                  className="font-mono text-slate"
+                  style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}
+                >
+                  Case File
+                </span>
+                <span
+                  className="font-mono"
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: 'var(--color-teal)',
+                    background: 'rgba(54, 198, 174, 0.08)',
+                    padding: '2px 8px',
+                    borderRadius: 5,
+                    border: '1px solid rgba(54, 198, 174, 0.25)',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  {c.transaction_id}
+                </span>
+              </div>
+
+              <h1
+                className="font-body text-white"
+                style={{
+                  fontSize: 26,
+                  fontWeight: 700,
+                  margin: '0 0 12px 0',
+                  lineHeight: 1.25,
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                {formatDisputeReason(c.dispute_reason)}
+              </h1>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', fontSize: 13 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span className="font-mono text-slate" style={{ textTransform: 'uppercase', fontSize: 11 }}>
+                    Merchant:
+                  </span>
+                  <span className="font-mono text-white" style={{ fontWeight: 600 }}>
+                    {c.merchant_id.toUpperCase()}
+                  </span>
+                </div>
+                <span style={{ color: 'var(--color-ink-border)' }}>•</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span className="font-mono text-slate" style={{ textTransform: 'uppercase', fontSize: 11 }}>
+                    Dispute Filed:
+                  </span>
+                  <span className="font-mono text-slate-light">{formatDate(c.created_at)}</span>
+                </div>
+                {c.decision_timestamp && (
+                  <>
+                    <span style={{ color: 'var(--color-ink-border)' }}>•</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span className="font-mono text-slate" style={{ textTransform: 'uppercase', fontSize: 11 }}>
+                        Decided:
+                      </span>
+                      <span className="font-mono text-slate-light">{formatDate(c.decision_timestamp)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Prominent Amount Box */}
+            <div
+              style={{
+                background: 'var(--color-ink)',
+                border: '1px solid var(--color-ink-border)',
+                borderRadius: 8,
+                padding: '14px 22px',
+                textAlign: 'right',
+                minWidth: 200,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+              }}
+            >
+              <span
+                className="font-mono text-slate"
+                style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}
+              >
+                Dispute Amount
+              </span>
+              <div
+                className="font-mono text-white"
+                style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15 }}
+              >
+                {formatAmount(c.amount, c.currency)}
+              </div>
+              <span
+                className="font-mono"
+                style={{ fontSize: 11, color: 'var(--color-teal)', fontWeight: 600, marginTop: 4, display: 'block' }}
+              >
+                {c.currency || 'USD'} Capital Exposure
+              </span>
+            </div>
+          </div>
+
+          {/* Customer Claim Quote Callout */}
+          <div
+            style={{
+              marginTop: 18,
+              padding: '12px 18px',
+              background: 'var(--color-ink-mid)',
+              borderRadius: 7,
+              border: '1px solid var(--color-ink-border)',
+              borderLeftWidth: 3,
+              borderLeftColor: 'var(--color-teal)',
+            }}
           >
-            "{c.customer_claim}"
-          </p>
+            <div
+              className="font-mono text-slate"
+              style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}
+            >
+              Customer Claim Statement (Allegation)
+            </div>
+            <p
+              className="font-body text-white"
+              style={{ fontSize: 13, margin: 0, lineHeight: 1.5, opacity: 0.92, fontStyle: 'italic' }}
+            >
+              "{c.customer_claim}"
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* ── CASE OVERVIEW: 4 COMPACT SUMMARY CARDS ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
+      {/* ══════════════════════════════════════════════════════════════════════
+          PART B: COMPACT OVERVIEW
+          - AI recommendation and confidence
+          - Evidence coverage and strength
+      ════════════════════════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {/* Card 1: AI Recommendation */}
         <div
           className="card"
           style={{
-            padding: '14px 16px',
-            borderLeft: `3px solid ${recColor}`,
+            padding: '16px 18px',
+            borderLeft: `4px solid ${recColor}`,
             background: 'var(--color-ink-light)',
           }}
         >
@@ -626,7 +643,7 @@ export default function CaseDetail({ caseId, onBack }: Props) {
           <div
             className="font-mono"
             style={{
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: 700,
               color: recColor,
               whiteSpace: 'nowrap',
@@ -637,620 +654,614 @@ export default function CaseDetail({ caseId, onBack }: Props) {
           >
             {recLabel}
           </div>
-          <span className="font-body text-slate-light" style={{ fontSize: 11, marginTop: 3, display: 'block' }}>
-            Advisory Pipeline
+          <span className="font-body text-slate-light" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
+            Advisory Finding
           </span>
         </div>
 
         {/* Card 2: AI Confidence */}
-        <div className="card" style={{ padding: '14px 16px', background: 'var(--color-ink-light)' }}>
+        <div className="card" style={{ padding: '16px 18px', background: 'var(--color-ink-light)' }}>
           <span
             className="font-mono text-slate"
             style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}
           >
-            AI Confidence
+            Engine Confidence
           </span>
-          <div className="font-mono text-white" style={{ fontSize: 18, fontWeight: 700 }}>
+          <div className="font-mono text-white" style={{ fontSize: 20, fontWeight: 700 }}>
             {confidencePct !== null ? `${confidencePct}%` : '---'}
           </div>
-          <span className="font-body text-slate-light" style={{ fontSize: 11, marginTop: 3, display: 'block' }}>
-            {aiRec?.used_fallback ? 'Fallback Policy' : 'Evidence-weighted model'}
+          <span className="font-body text-slate-light" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
+            {aiRec?.used_fallback ? 'Deterministic Policy' : 'Evidence-weighted Model'}
           </span>
         </div>
 
-        {/* Card 3: Evidence Strength */}
-        <div className="card" style={{ padding: '14px 16px', background: 'var(--color-ink-light)' }}>
+        {/* Card 3: Evidence Coverage */}
+        <div className="card" style={{ padding: '16px 18px', background: 'var(--color-ink-light)' }}>
+          <span
+            className="font-mono text-slate"
+            style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}
+          >
+            Evidence Coverage
+          </span>
+          <div className="font-mono text-white" style={{ fontSize: 20, fontWeight: 700 }}>
+            {c.categories_available ? `${c.categories_available.length} / 4` : '0 / 4'}
+          </div>
+          <span className="font-body text-slate-light" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
+            Canonical Categories
+          </span>
+        </div>
+
+        {/* Card 4: Evidence Strength */}
+        <div className="card" style={{ padding: '16px 18px', background: 'var(--color-ink-light)' }}>
           <span
             className="font-mono text-slate"
             style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}
           >
             Evidence Strength
           </span>
-          <div className="font-mono" style={{ fontSize: 18, fontWeight: 700, color: strengthColor }}>
+          <div className="font-mono" style={{ fontSize: 20, fontWeight: 700, color: strengthColor }}>
             {strength}
           </div>
-          <span className="font-body text-slate-light" style={{ fontSize: 11, marginTop: 3, display: 'block' }}>
-            {c.completeness_score != null
-              ? `${Math.round(c.completeness_score)}% completeness score`
-              : `${c.categories_available?.length || 0}/4 categories mapped`}
-          </span>
-        </div>
-
-        {/* Card 4: Human Review Status */}
-        <div className="card" style={{ padding: '14px 16px', background: 'var(--color-ink-light)' }}>
-          <span
-            className="font-mono text-slate"
-            style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}
-          >
-            Human Review
-          </span>
-          <div
-            className="font-mono"
-            style={{
-              fontSize: 16,
-              fontWeight: 700,
-              color: c.human_decision ? 'var(--color-teal)' : 'var(--color-amber)',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              letterSpacing: '0.02em',
-            }}
-          >
-            {c.human_decision ? c.human_decision.toUpperCase() : 'PENDING'}
-          </div>
-          <span className="font-body text-slate-light" style={{ fontSize: 11, marginTop: 3, display: 'block' }}>
-            {c.human_decision
-              ? c.reviewer_id
-                ? `Authorized by ${c.reviewer_id}`
-                : 'Decision logged'
-              : 'Awaiting human authorization'}
+          <span className="font-body text-slate-light" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
+            {c.completeness_score != null ? `${Math.round(c.completeness_score)}% Score` : 'Calculated Index'}
           </span>
         </div>
       </div>
 
-      {/* ── TWO-COLUMN INVESTIGATION WORKSPACE ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* ══════════════════════════════════════════════════════════════════════
-            LEFT COLUMN (7 cols / ~58%): Evidence, AI Findings, and Claims
-        ════════════════════════════════════════════════════════════════════════ */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
-          {/* SECTION A: AI ANALYSIS & RECOMMENDATION */}
-          <section>
-            <SectionHeader
-              title="Section A: AI Analysis & Recommendation"
-              badge="ADVISORY ONLY"
-              subtitle="Algorithmic finding based on merchant records and customer claim veracity"
-            />
+      {/* ══════════════════════════════════════════════════════════════════════
+          PART C: INVESTIGATION WORKSPACE
+          - Two-column desktop layout (1 col on mobile):
+            Column 1: AI Analysis and recommendation
+            Column 2: Human Review and decision information
+      ════════════════════════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mb-10">
+        {/* COLUMN 1: AI Analysis & Recommendation */}
+        <div>
+          <SectionHeader
+            title="AI Analysis & Recommendation"
+            badge="ADVISORY ONLY"
+            subtitle="Deterministic rule evaluation and evidence confidence score"
+          />
 
-            <div
-              className="card"
-              style={{
-                padding: '22px 24px',
-                borderTop: `4px solid ${recColor}`,
-                background: 'var(--color-ink-light)',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
-                <div>
-                  <div
-                    className="font-mono text-slate"
-                    style={{ fontSize: 11, letterSpacing: '0.08em', marginBottom: 4, textTransform: 'uppercase' }}
-                  >
-                    Recommended Action
-                  </div>
-                  <div
-                    className="font-mono"
-                    style={{ fontSize: 24, color: recColor, fontWeight: 700, letterSpacing: '0.02em' }}
-                  >
-                    {recLabel}
-                  </div>
+          <div
+            className="card"
+            style={{
+              padding: '24px',
+              borderTop: `4px solid ${recColor}`,
+              background: 'var(--color-ink-light)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+              <div>
+                <div
+                  className="font-mono text-slate"
+                  style={{ fontSize: 11, letterSpacing: '0.08em', marginBottom: 4, textTransform: 'uppercase' }}
+                >
+                  Recommended Action
                 </div>
-
-                <div style={{ textAlign: 'right' }}>
-                  <div
-                    className="font-mono text-slate"
-                    style={{ fontSize: 11, letterSpacing: '0.06em', marginBottom: 4, textTransform: 'uppercase' }}
-                  >
-                    Engine Confidence
-                  </div>
-                  <div className="font-mono text-white" style={{ fontSize: 22, fontWeight: 700 }}>
-                    {confidencePct !== null ? `${confidencePct}%` : '---'}
-                  </div>
+                <div
+                  className="font-mono"
+                  style={{ fontSize: 24, color: recColor, fontWeight: 700, letterSpacing: '0.02em' }}
+                >
+                  {recLabel}
                 </div>
               </div>
 
-              {c.ai_explanation && (
+              <div style={{ textAlign: 'right' }}>
                 <div
+                  className="font-mono text-slate"
+                  style={{ fontSize: 11, letterSpacing: '0.06em', marginBottom: 4, textTransform: 'uppercase' }}
+                >
+                  Confidence
+                </div>
+                <div className="font-mono text-white" style={{ fontSize: 22, fontWeight: 700 }}>
+                  {confidencePct !== null ? `${confidencePct}%` : '---'}
+                </div>
+              </div>
+            </div>
+
+            {c.ai_explanation && (
+              <div
+                style={{
+                  marginTop: 18,
+                  paddingTop: 16,
+                  borderTop: '1px solid var(--color-ink-border)',
+                }}
+              >
+                <span
+                  className="font-mono text-slate-light"
                   style={{
-                    marginTop: 16,
-                    paddingTop: 14,
-                    borderTop: '1px solid var(--color-ink-border)',
+                    fontSize: 10,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    display: 'block',
+                    marginBottom: 6,
+                    fontWeight: 600,
                   }}
                 >
-                  <span
-                    className="font-mono text-slate-light"
+                  Explanation Summary
+                </span>
+                <p className="font-body text-white" style={{ fontSize: 13, margin: 0, lineHeight: 1.6, opacity: 0.95 }}>
+                  {c.ai_explanation}
+                </p>
+              </div>
+            )}
+
+            {c.contradiction_detected && (
+              <div
+                style={{
+                  marginTop: 18,
+                  padding: '12px 16px',
+                  background: 'rgba(224, 82, 82, 0.08)',
+                  borderRadius: '0 6px 6px 0',
+                  border: '1px solid rgba(224, 82, 82, 0.25)',
+                  borderLeftWidth: 3,
+                  borderLeftColor: 'var(--color-red)',
+                }}
+              >
+                <div
+                  className="font-mono"
+                  style={{ fontSize: 11, color: 'var(--color-red)', letterSpacing: '0.06em', fontWeight: 700 }}
+                >
+                  SECURITY / EVIDENCE CONFLICT DETECTED
+                </div>
+                <div className="font-body text-slate-light" style={{ fontSize: 12, marginTop: 4, lineHeight: 1.5 }}>
+                  Deterministic safety rules require human review; this case cannot be auto-resolved.
+                </div>
+              </div>
+            )}
+
+            <div
+              style={{
+                marginTop: 18,
+                paddingTop: 14,
+                borderTop: '1px solid var(--color-ink-border)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <span style={{ fontSize: 13 }}>ℹ️</span>
+              <span className="font-body text-slate" style={{ fontSize: 12, fontStyle: 'italic' }}>
+                AI recommendation is advisory. Final dispute action requires human review and authorization.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* COLUMN 2: Human Review & Decision */}
+        <div>
+          <SectionHeader
+            title="Human Review & Decision"
+            subtitle="Analyst review actions and immutable audit recording"
+          />
+
+          <div
+            className="card"
+            style={{
+              padding: '24px',
+              borderLeft: '4px solid var(--color-teal)',
+              background: 'var(--color-ink-light)',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+            }}
+          >
+            {/* Active Reviewer Input Bar */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 18,
+                paddingBottom: 14,
+                borderBottom: '1px solid var(--color-ink-border)',
+              }}
+            >
+              <span
+                className="font-mono text-slate-light"
+                style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}
+              >
+                Active Reviewer:
+              </span>
+              <input
+                type="text"
+                value={reviewerId}
+                onChange={(e) => setReviewerId(e.target.value)}
+                placeholder="analyst_id"
+                style={{
+                  background: 'var(--color-ink-mid)',
+                  border: '1px solid var(--color-ink-border)',
+                  color: 'var(--color-white)',
+                  padding: '5px 10px',
+                  borderRadius: 6,
+                  fontSize: 11,
+                  fontFamily: 'var(--font-mono)',
+                  width: 150,
+                }}
+              />
+            </div>
+
+            {c.human_decision ? (
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    flexWrap: 'wrap',
+                    gap: 12,
+                    marginBottom: 16,
+                  }}
+                >
+                  <div>
+                    <span
+                      className="font-mono text-slate"
+                      style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+                    >
+                      Recorded Decision
+                    </span>
+                    <div
+                      className="font-mono"
+                      style={{ fontSize: 22, color: 'var(--color-teal)', fontWeight: 700, marginTop: 4 }}
+                    >
+                      {c.human_decision.toUpperCase()}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span className="font-mono text-slate" style={{ fontSize: 10, display: 'block' }}>
+                      DECISION TIMESTAMP
+                    </span>
+                    <span className="font-mono text-white" style={{ fontSize: 12 }}>
+                      {c.decision_timestamp ? formatDate(c.decision_timestamp) : 'Recorded'}
+                    </span>
+                    <span className="font-mono text-slate" style={{ fontSize: 10, display: 'block', marginTop: 2 }}>
+                      By: {c.reviewer_id || reviewerId}
+                    </span>
+                  </div>
+                </div>
+
+                {c.reviewer_notes && (
+                  <div
                     style={{
-                      fontSize: 10,
-                      textTransform: 'uppercase',
+                      padding: '12px 14px',
+                      background: 'var(--color-ink-mid)',
+                      borderRadius: 6,
+                      marginBottom: 20,
+                      border: '1px solid var(--color-ink-border)',
+                    }}
+                  >
+                    <span
+                      className="font-mono text-slate"
+                      style={{ fontSize: 10, textTransform: 'uppercase', display: 'block', marginBottom: 4 }}
+                    >
+                      Reviewer Notes
+                    </span>
+                    <span className="font-body text-slate-light" style={{ fontSize: 13, lineHeight: 1.5 }}>
+                      {c.reviewer_notes}
+                    </span>
+                  </div>
+                )}
+
+                <div style={{ paddingTop: 16, borderTop: '1px solid var(--color-ink-border)' }}>
+                  <span
+                    className="font-mono text-slate"
+                    style={{
+                      fontSize: 11,
                       letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      display: 'block',
+                      marginBottom: 10,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Lifecycle Actions (Settlement)
+                  </span>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    {c.status !== 'RESOLVED' && c.status !== 'resolved' && (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmAction('resolve')}
+                        disabled={decisionSubmitting !== null}
+                        style={{
+                          padding: '9px 18px',
+                          background: 'var(--color-teal)',
+                          color: '#0B1120',
+                          border: 'none',
+                          borderRadius: 6,
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: 12,
+                          fontWeight: 700,
+                          letterSpacing: '0.04em',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 8px rgba(54,198,174,0.25)',
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal-dim)'
+                        }}
+                        onMouseLeave={(e) => {
+                          ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal)'
+                        }}
+                      >
+                        ✓ Mark Case Resolved
+                      </button>
+                    )}
+                    {c.status !== 'CLOSED' && c.status !== 'closed' && (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmAction('close')}
+                        disabled={decisionSubmitting !== null}
+                        style={{
+                          padding: '9px 18px',
+                          background: 'var(--color-ink-mid)',
+                          border: '1px solid var(--color-ink-border)',
+                          color: 'var(--color-slate-light)',
+                          borderRadius: 6,
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--color-white)'
+                          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-slate)'
+                        }}
+                        onMouseLeave={(e) => {
+                          ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--color-slate-light)'
+                          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-ink-border)'
+                        }}
+                      >
+                        Archive & Close Case
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ marginBottom: 16 }}>
+                  <span
+                    className="font-mono text-slate"
+                    style={{
+                      fontSize: 11,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
                       display: 'block',
                       marginBottom: 6,
                       fontWeight: 600,
                     }}
                   >
-                    Explanation Summary
+                    Review Notes / Rationale (Audit Record)
                   </span>
-                  <p className="font-body text-white" style={{ fontSize: 13, margin: 0, lineHeight: 1.6, opacity: 0.95 }}>
-                    {c.ai_explanation}
-                  </p>
-                </div>
-              )}
-
-              {c.contradiction_detected && (
-                <div
-                  style={{
-                    marginTop: 16,
-                    padding: '12px 16px',
-                    borderLeft: '3px solid var(--color-red)',
-                    background: 'rgba(224, 82, 82, 0.08)',
-                    borderRadius: '0 6px 6px 0',
-                    border: '1px solid rgba(224, 82, 82, 0.25)',
-                    borderLeftWidth: 3,
-                    borderLeftColor: 'var(--color-red)',
-                  }}
-                >
-                  <div
-                    className="font-mono"
-                    style={{ fontSize: 11, color: 'var(--color-red)', letterSpacing: '0.06em', fontWeight: 700 }}
-                  >
-                    SECURITY / EVIDENCE CONFLICT DETECTED
-                  </div>
-                  <div className="font-body text-slate-light" style={{ fontSize: 12, marginTop: 4, lineHeight: 1.5 }}>
-                    Deterministic safety rules require human review; this case cannot be auto-resolved.
-                  </div>
-                </div>
-              )}
-
-              <div
-                style={{
-                  marginTop: 16,
-                  paddingTop: 12,
-                  borderTop: '1px solid var(--color-ink-border)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <span style={{ fontSize: 13 }}>ℹ️</span>
-                <span className="font-body text-slate" style={{ fontSize: 12, fontStyle: 'italic' }}>
-                  AI recommendation is advisory. Final dispute action requires human review and authorization.
-                </span>
-              </div>
-            </div>
-          </section>
-
-          {/* SECTION B: EVIDENCE OVERVIEW & MANAGEMENT */}
-          <section>
-            <SectionHeader
-              title="Section B: Evidence Overview & Management"
-              subtitle="Canonical 4-category evidence coverage and file attachments"
-              action={
-                <button
-                  type="button"
-                  onClick={() => setIsUploadOpen(true)}
-                  style={{
-                    background: 'var(--color-teal)',
-                    color: '#0B1120',
-                    border: 'none',
-                    padding: '7px 15px',
-                    borderRadius: 6,
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(54, 198, 174, 0.25)',
-                    transition: 'all 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal-dim)'
-                  }}
-                  onMouseLeave={(e) => {
-                    ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal)'
-                  }}
-                >
-                  + Upload Evidence
-                </button>
-              }
-            />
-
-            <div className="card" style={{ padding: '18px 20px', marginBottom: 16, background: 'var(--color-ink-light)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span
-                  className="font-mono text-slate"
-                  style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}
-                >
-                  Canonical 4-Category Coverage
-                </span>
-                <span
-                  className="font-mono"
-                  style={{
-                    fontSize: 11,
-                    color: strengthColor,
-                    fontWeight: 700,
-                    background: `color-mix(in srgb, ${strengthColor} 12%, transparent)`,
-                    padding: '2px 8px',
-                    borderRadius: 4,
-                  }}
-                >
-                  Strength: {strength}
-                </span>
-              </div>
-              <CompletenessBar
-                score={c.completeness_score}
-                showLabel={true}
-                showChecklist={true}
-                categoriesAvailable={c.categories_available}
-                evidence={c.evidence}
-              />
-            </div>
-
-            <EvidencePanel evidenceList={c.evidence} audit={audit} onUploadClick={() => setIsUploadOpen(true)} />
-          </section>
-
-          {/* SECTION: CLAIM VERIFICATION */}
-          <section>
-            <SectionHeader
-              title="Claim Verification"
-              subtitle="Atomic factual claims evaluated against verified evidence files"
-            />
-            <ClaimList claims={c.claims} audit={audit} />
-          </section>
-        </div>
-
-        {/* ══════════════════════════════════════════════════════════════════════
-            RIGHT COLUMN (5 cols / ~42%): Human Review Workspace & Pipeline
-        ════════════════════════════════════════════════════════════════════════ */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          {/* SECTION C: HUMAN REVIEW & FINAL DECISION WORKSPACE */}
-          <section>
-            <SectionHeader
-              title="Section C: Human Review & Decision"
-              subtitle="Reviewer authorization and dispute resolution actions"
-            />
-
-            <div
-              className="card"
-              style={{
-                padding: '22px 24px',
-                borderLeft: '4px solid var(--color-teal)',
-                background: 'var(--color-ink-light)',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
-              }}
-            >
-              {/* Reviewer Identifier Bar */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: 18,
-                  paddingBottom: 14,
-                  borderBottom: '1px solid var(--color-ink-border)',
-                }}
-              >
-                <span
-                  className="font-mono text-slate-light"
-                  style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}
-                >
-                  Active Reviewer:
-                </span>
-                <input
-                  type="text"
-                  value={reviewerId}
-                  onChange={(e) => setReviewerId(e.target.value)}
-                  placeholder="analyst_id"
-                  style={{
-                    background: 'var(--color-ink-mid)',
-                    border: '1px solid var(--color-ink-border)',
-                    color: 'var(--color-white)',
-                    padding: '5px 10px',
-                    borderRadius: 6,
-                    fontSize: 11,
-                    fontFamily: 'var(--font-mono)',
-                    width: 150,
-                  }}
-                />
-              </div>
-
-              {c.human_decision ? (
-                <div>
-                  <div
+                  <textarea
+                    value={reviewNotes}
+                    onChange={(e) => setReviewNotes(e.target.value)}
+                    placeholder="Explain rationale for this decision (e.g., customer signed delivery manifest verified, merchant agreed to refund)..."
+                    rows={3}
                     style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      background: 'var(--color-ink-mid)',
+                      border: '1px solid var(--color-ink-border)',
+                      borderRadius: 7,
+                      color: 'var(--color-white)',
+                      fontSize: 13,
+                      fontFamily: 'var(--font-body)',
+                      boxSizing: 'border-box' as const,
+                      resize: 'vertical' as const,
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmAction('approve')}
+                    disabled={decisionSubmitting !== null}
+                    style={{
+                      width: '100%',
+                      padding: '11px 18px',
+                      background: 'rgba(54, 198, 174, 0.12)',
+                      border: '1px solid var(--color-teal)',
+                      color: 'var(--color-teal)',
+                      borderRadius: 7,
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      transition: 'background 0.15s ease',
                       display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      flexWrap: 'wrap',
-                      gap: 12,
-                      marginBottom: 16,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                    }}
+                    onMouseEnter={(e) => {
+                      ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(54, 198, 174, 0.22)'
+                    }}
+                    onMouseLeave={(e) => {
+                      ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(54, 198, 174, 0.12)'
                     }}
                   >
-                    <div>
-                      <span
-                        className="font-mono text-slate"
-                        style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}
-                      >
-                        Recorded Decision
-                      </span>
-                      <div
-                        className="font-mono"
-                        style={{ fontSize: 22, color: 'var(--color-teal)', fontWeight: 700, marginTop: 4 }}
-                      >
-                        {c.human_decision.toUpperCase()}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span className="font-mono text-slate" style={{ fontSize: 10, display: 'block' }}>
-                        DECISION TIMESTAMP
-                      </span>
-                      <span className="font-mono text-white" style={{ fontSize: 12 }}>
-                        {c.decision_timestamp ? formatDate(c.decision_timestamp) : 'Recorded'}
-                      </span>
-                      <span className="font-mono text-slate" style={{ fontSize: 10, display: 'block', marginTop: 2 }}>
-                        By: {c.reviewer_id || reviewerId}
-                      </span>
-                    </div>
-                  </div>
+                    ✓ Approve Claim (Refund Customer)
+                  </button>
 
-                  {c.reviewer_notes && (
-                    <div
-                      style={{
-                        padding: '12px 14px',
-                        background: 'var(--color-ink-mid)',
-                        borderRadius: 6,
-                        marginBottom: 20,
-                        border: '1px solid var(--color-ink-border)',
-                      }}
-                    >
-                      <span
-                        className="font-mono text-slate"
-                        style={{ fontSize: 10, textTransform: 'uppercase', display: 'block', marginBottom: 4 }}
-                      >
-                        Reviewer Notes
-                      </span>
-                      <span className="font-body text-slate-light" style={{ fontSize: 13, lineHeight: 1.5 }}>
-                        {c.reviewer_notes}
-                      </span>
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setConfirmAction('contest')}
+                    disabled={decisionSubmitting !== null}
+                    style={{
+                      width: '100%',
+                      padding: '11px 18px',
+                      background: 'rgba(54, 198, 174, 0.05)',
+                      border: '1px solid var(--color-teal)',
+                      color: 'var(--color-teal)',
+                      borderRadius: 7,
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      transition: 'background 0.15s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                    }}
+                    onMouseEnter={(e) => {
+                      ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(54, 198, 174, 0.16)'
+                    }}
+                    onMouseLeave={(e) => {
+                      ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(54, 198, 174, 0.05)'
+                    }}
+                  >
+                    Contest Dispute (Representment)
+                  </button>
 
-                  <div style={{ paddingTop: 16, borderTop: '1px solid var(--color-ink-border)' }}>
-                    <span
-                      className="font-mono text-slate"
-                      style={{
-                        fontSize: 11,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        display: 'block',
-                        marginBottom: 10,
-                        fontWeight: 600,
-                      }}
-                    >
-                      Lifecycle Actions (Settlement)
-                    </span>
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                      {c.status !== 'RESOLVED' && c.status !== 'resolved' && (
-                        <button
-                          type="button"
-                          onClick={() => setConfirmAction('resolve')}
-                          disabled={decisionSubmitting !== null}
-                          style={{
-                            padding: '9px 18px',
-                            background: 'var(--color-teal)',
-                            color: '#0B1120',
-                            border: 'none',
-                            borderRadius: 6,
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: 12,
-                            fontWeight: 700,
-                            letterSpacing: '0.04em',
-                            cursor: 'pointer',
-                            boxShadow: '0 2px 8px rgba(54,198,174,0.25)',
-                            transition: 'all 0.15s ease',
-                          }}
-                          onMouseEnter={(e) => {
-                            ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal-dim)'
-                          }}
-                          onMouseLeave={(e) => {
-                            ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal)'
-                          }}
-                        >
-                          ✓ Mark Case Resolved
-                        </button>
-                      )}
-                      {c.status !== 'CLOSED' && c.status !== 'closed' && (
-                        <button
-                          type="button"
-                          onClick={() => setConfirmAction('close')}
-                          disabled={decisionSubmitting !== null}
-                          style={{
-                            padding: '9px 18px',
-                            background: 'var(--color-ink-mid)',
-                            border: '1px solid var(--color-ink-border)',
-                            color: 'var(--color-slate-light)',
-                            borderRadius: 6,
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: 12,
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                          }}
-                          onMouseEnter={(e) => {
-                            ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--color-white)'
-                            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-slate)'
-                          }}
-                          onMouseLeave={(e) => {
-                            ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--color-slate-light)'
-                            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-ink-border)'
-                          }}
-                        >
-                          Archive & Close Case
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmAction('request_more_evidence')}
+                    disabled={decisionSubmitting !== null}
+                    style={{
+                      width: '100%',
+                      padding: '11px 18px',
+                      background: 'rgba(240, 168, 48, 0.08)',
+                      border: '1px solid var(--color-amber)',
+                      color: 'var(--color-amber)',
+                      borderRadius: 7,
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      transition: 'background 0.15s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                    }}
+                    onMouseEnter={(e) => {
+                      ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(240, 168, 48, 0.18)'
+                    }}
+                    onMouseLeave={(e) => {
+                      ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(240, 168, 48, 0.08)'
+                    }}
+                  >
+                    Request More Evidence
+                  </button>
                 </div>
-              ) : (
-                <div>
-                  <div style={{ marginBottom: 16 }}>
-                    <span
-                      className="font-mono text-slate"
-                      style={{
-                        fontSize: 11,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        display: 'block',
-                        marginBottom: 6,
-                        fontWeight: 600,
-                      }}
-                    >
-                      Review Notes / Rationale (Audit Record)
-                    </span>
-                    <textarea
-                      value={reviewNotes}
-                      onChange={(e) => setReviewNotes(e.target.value)}
-                      placeholder="Explain rationale for this decision (e.g., customer signed delivery manifest verified, merchant agreed to refund)..."
-                      rows={3}
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        background: 'var(--color-ink-mid)',
-                        border: '1px solid var(--color-ink-border)',
-                        borderRadius: 7,
-                        color: 'var(--color-white)',
-                        fontSize: 13,
-                        fontFamily: 'var(--font-body)',
-                        boxSizing: 'border-box' as const,
-                        resize: 'vertical' as const,
-                      }}
-                    />
+
+                {decisionError && (
+                  <div className="font-body text-red" style={{ fontSize: 13, marginTop: 12, color: 'var(--color-red)' }}>
+                    {decisionError}
                   </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmAction('approve')}
-                      disabled={decisionSubmitting !== null}
-                      style={{
-                        width: '100%',
-                        padding: '11px 18px',
-                        background: 'rgba(54, 198, 174, 0.12)',
-                        border: '1px solid var(--color-teal)',
-                        color: 'var(--color-teal)',
-                        borderRadius: 7,
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: 12,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                        transition: 'background 0.15s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                      }}
-                      onMouseEnter={(e) => {
-                        ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(54, 198, 174, 0.22)'
-                      }}
-                      onMouseLeave={(e) => {
-                        ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(54, 198, 174, 0.12)'
-                      }}
-                    >
-                      ✓ Approve Claim (Refund Customer)
-                    </button>
+      {/* ══════════════════════════════════════════════════════════════════════
+          PART D: EVIDENCE MANAGEMENT (FULL-WIDTH SECTION)
+          - Canonical 4-category coverage & strength
+          - Evidence upload trigger
+          - Complete evidence file explorer
+      ════════════════════════════════════════════════════════════════════════ */}
+      <section style={{ marginBottom: 36 }}>
+        <SectionHeader
+          title="Evidence Management"
+          subtitle="Canonical 4-category coverage, file repository, and merchant documents"
+          action={
+            <button
+              type="button"
+              onClick={() => setIsUploadOpen(true)}
+              style={{
+                background: 'var(--color-teal)',
+                color: '#0B1120',
+                border: 'none',
+                padding: '8px 18px',
+                borderRadius: 6,
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(54, 198, 174, 0.25)',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal-dim)'
+              }}
+              onMouseLeave={(e) => {
+                ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal)'
+              }}
+            >
+              + Upload Evidence
+            </button>
+          }
+        />
 
-                    <button
-                      type="button"
-                      onClick={() => setConfirmAction('contest')}
-                      disabled={decisionSubmitting !== null}
-                      style={{
-                        width: '100%',
-                        padding: '11px 18px',
-                        background: 'rgba(54, 198, 174, 0.05)',
-                        border: '1px solid var(--color-teal)',
-                        color: 'var(--color-teal)',
-                        borderRadius: 7,
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: 12,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                        transition: 'background 0.15s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                      }}
-                      onMouseEnter={(e) => {
-                        ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(54, 198, 174, 0.16)'
-                      }}
-                      onMouseLeave={(e) => {
-                        ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(54, 198, 174, 0.05)'
-                      }}
-                    >
-                      Contest Dispute (Representment)
-                    </button>
+        {/* Coverage Checklist Card */}
+        <div className="card" style={{ padding: '20px 24px', marginBottom: 20, background: 'var(--color-ink-light)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <span
+              className="font-mono text-slate"
+              style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}
+            >
+              Canonical 4-Category Coverage Index
+            </span>
+            <span
+              className="font-mono"
+              style={{
+                fontSize: 11,
+                color: strengthColor,
+                fontWeight: 700,
+                background: `color-mix(in srgb, ${strengthColor} 12%, transparent)`,
+                padding: '3px 10px',
+                borderRadius: 4,
+              }}
+            >
+              Strength: {strength}
+            </span>
+          </div>
+          <CompletenessBar
+            score={c.completeness_score}
+            showLabel={true}
+            showChecklist={true}
+            categoriesAvailable={c.categories_available}
+            evidence={c.evidence}
+          />
+        </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setConfirmAction('request_more_evidence')}
-                      disabled={decisionSubmitting !== null}
-                      style={{
-                        width: '100%',
-                        padding: '11px 18px',
-                        background: 'rgba(240, 168, 48, 0.08)',
-                        border: '1px solid var(--color-amber)',
-                        color: 'var(--color-amber)',
-                        borderRadius: 7,
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: 12,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                        transition: 'background 0.15s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                      }}
-                      onMouseEnter={(e) => {
-                        ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(240, 168, 48, 0.18)'
-                      }}
-                      onMouseLeave={(e) => {
-                        ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(240, 168, 48, 0.08)'
-                      }}
-                    >
-                      Request More Evidence
-                    </button>
-                  </div>
+        {/* Evidence Explorer Panel */}
+        <EvidencePanel evidenceList={c.evidence} audit={audit} onUploadClick={() => setIsUploadOpen(true)} />
+      </section>
 
-                  {decisionError && (
-                    <div className="font-body text-red" style={{ fontSize: 13, marginTop: 12, color: 'var(--color-red)' }}>
-                      {decisionError}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </section>
+      {/* ══════════════════════════════════════════════════════════════════════
+          PART E: ADDITIONAL INVESTIGATION INFORMATION
+          - Claim verification list
+          - Contradictions alert (if any)
+          - AI Investigation pipeline execution logs
+      ════════════════════════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* Left: Claim Verification */}
+        <div>
+          <SectionHeader
+            title="Claim Verification"
+            subtitle="Atomic factual claims evaluated against verified evidence files"
+          />
+          <ClaimList claims={c.claims} audit={audit} />
+        </div>
 
-          {/* CONTRADICTIONS CALLOUT (If Present) */}
+        {/* Right: Contradictions & Pipeline Execution */}
+        <div className="flex flex-col gap-6">
           {contradicted.length > 0 && (
-            <section>
+            <div>
               <SectionHeader title="Contradictions Found" badge="SECURITY ALERT" />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {contradicted.map((claim) => (
@@ -1279,17 +1290,16 @@ export default function CaseDetail({ caseId, onBack }: Props) {
                   </div>
                 ))}
               </div>
-            </section>
+            </div>
           )}
 
-          {/* AI INVESTIGATION PIPELINE AUDIT LOG */}
-          <section>
+          <div>
             <SectionHeader
               title="AI Investigation Pipeline"
               subtitle="Tool execution history and deterministic rule evaluations"
             />
             <AgentActivity audit={audit} />
-          </section>
+          </div>
         </div>
       </div>
 
