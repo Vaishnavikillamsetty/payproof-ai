@@ -89,6 +89,34 @@ def get_demo_info(transaction_id: str, db: Session = Depends(get_db)):
     return {"is_demo": False}
 
 
+def _resolve_case_currency(c: Case, db: Session) -> bool:
+    """
+    Safely resolve missing/unknown currency ONLY if an authoritative transaction record exists.
+    Never assumes or invents currency. Returns True if currency was updated.
+    """
+    curr = (c.currency or "").strip().upper()
+    if curr and curr != "UNKNOWN":
+        return False
+
+    # 1. Check authoritative payment evidence content
+    if c.evidence:
+        for ev in c.evidence:
+            if ev.evidence_type in ("payment", "transaction") and isinstance(ev.content, dict):
+                p_curr = ev.content.get("currency")
+                if isinstance(p_curr, str) and p_curr.strip() and p_curr.strip().upper() != "UNKNOWN":
+                    c.currency = p_curr.strip().upper()
+                    return True
+
+    # 2. Check authoritative external payment gateway record
+    base_id = _get_base_demo_id(c.transaction_id)
+    pmt = db.query(PaymentGatewayRecord).filter_by(transaction_id=base_id).first()
+    if pmt and pmt.currency and pmt.currency.strip() and pmt.currency.strip().upper() != "UNKNOWN":
+        c.currency = pmt.currency.strip().upper()
+        return True
+
+    return False
+
+
 @router.get("/", response_model=List[CaseResponse])
 def get_cases(db: Session = Depends(get_db)):
     """
@@ -113,6 +141,7 @@ def get_cases(db: Session = Depends(get_db)):
         for row in ev_rows:
             ev_by_case.setdefault(row.case_id, []).append(row)
 
+        reconciled = False
         for c in cases:
             items = ev_by_case.get(c.id, [])
             cats, count = compute_category_coverage(items)
@@ -121,6 +150,17 @@ def get_cases(db: Session = Depends(get_db)):
             c.__dict__["evidence_types"] = list({r.evidence_type for r in items})
             if not c.evidence_strength:
                 c.__dict__["evidence_strength"] = evaluate_evidence_strength(items, cats, c.contradiction_detected)
+
+            # Reconcile unknown currency against authoritative transaction records
+            if _resolve_case_currency(c, db):
+                reconciled = True
+
+        if reconciled:
+            try:
+                db.commit()
+            except Exception as e:
+                logger.warning("Could not persist reconciled case currencies: %s", e)
+                db.rollback()
 
     return cases
 
@@ -138,6 +178,15 @@ def get_case(id: UUID, db: Session = Depends(get_db)):
     db_case.__dict__["evidence_types"] = [e.evidence_type for e in ev_list]
     if not db_case.evidence_strength:
         db_case.__dict__["evidence_strength"] = evaluate_evidence_strength(ev_list, cats, db_case.contradiction_detected)
+
+    # Reconcile unknown currency against authoritative transaction records
+    if _resolve_case_currency(db_case, db):
+        try:
+            db.commit()
+            db.refresh(db_case)
+        except Exception as e:
+            logger.warning("Could not persist reconciled currency for case %s: %s", id, e)
+            db.rollback()
 
     return db_case
 

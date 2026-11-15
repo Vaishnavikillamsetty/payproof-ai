@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for cases API: amount handling, scenario ID lookup, claim verdicts, and human review.
 """
 import time
@@ -260,3 +260,60 @@ def test_demo_reset_disabled_in_production():
     finally:
         settings.environment = original_env
         settings.demo_mode = original_demo
+
+
+def test_authoritative_currency_reconciliation():
+    """
+    Cases with missing/UNKNOWN currency should be reconciled against authoritative
+    PaymentGatewayRecord if present, and left as UNKNOWN if no authoritative record exists.
+    Amounts must never be altered or converted.
+    """
+    db = SessionLocal()
+    try:
+        # Case 1: DEMO case with authoritative payment gateway record (USD)
+        case1 = Case(
+            transaction_id="DEMO_SCN_05_TESTRECONCILE",
+            merchant_id="M_TEST",
+            dispute_reason="product not received",
+            customer_claim="never arrived",
+            amount=120.00,
+            currency="UNKNOWN",
+            status="OPEN",
+        )
+        # Case 2: Unknown transaction with no gateway record
+        case2 = Case(
+            transaction_id="GENUINE_UNKNOWN_TXN_999",
+            merchant_id="M_TEST",
+            dispute_reason="general",
+            customer_claim="unknown",
+            amount=42.50,
+            currency="UNKNOWN",
+            status="OPEN",
+        )
+        db.add(case1)
+        db.add(case2)
+        db.commit()
+        db.refresh(case1)
+        db.refresh(case2)
+
+        c1_id = case1.id
+        c2_id = case2.id
+    finally:
+        db.close()
+
+    # Test GET /{id}
+    res1 = client.get(f"/cases/{c1_id}").json()
+    assert res1["currency"] == "USD", f"Expected USD from authoritative gateway record, got {res1['currency']}"
+    assert res1["amount"] == 120.00, "Amount must remain untouched"
+
+    res2 = client.get(f"/cases/{c2_id}").json()
+    assert res2["currency"] == "UNKNOWN", f"Expected UNKNOWN preserved for non-authoritative txn, got {res2['currency']}"
+    assert res2["amount"] == 42.50, "Amount must remain untouched"
+
+    # Test GET /
+    all_cases = client.get("/cases/").json()
+    c1_listed = next(c for c in all_cases if c["id"] == str(c1_id))
+    c2_listed = next(c for c in all_cases if c["id"] == str(c2_id))
+    assert c1_listed["currency"] == "USD"
+    assert c2_listed["currency"] == "UNKNOWN"
+
