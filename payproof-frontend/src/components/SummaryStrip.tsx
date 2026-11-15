@@ -102,7 +102,7 @@ export default function SummaryStrip({ cases }: Props) {
     },
     {
       label: 'Amount at Risk',
-      value: openCases.length > 0 ? amountAtRisk : '—',
+      value: openCases.length > 0 ? amountAtRisk : '\u2014',
       sub: 'Open cases only',
       color: openCases.length > 0 ? 'var(--color-amber)' : 'var(--color-white)',
     },

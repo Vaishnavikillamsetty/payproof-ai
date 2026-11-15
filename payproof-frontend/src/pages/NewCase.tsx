@@ -131,7 +131,7 @@ export default function NewCase({ onCancel, onSuccess }: Props) {
           alignItems: 'center',
           gap: 10,
         }}>
-          <span style={{ fontSize: 16 }}>?</span>
+          <span style={{ fontSize: 16 }}>⚠️</span>
           {error}
         </div>
       )}

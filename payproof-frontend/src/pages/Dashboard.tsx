@@ -149,7 +149,7 @@ export default function Dashboard({ onSelectCase }: Props) {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-            <span style={{ fontSize: 16 }}>?</span>
+            <span style={{ fontSize: 16 }}>⚠️</span>
             <span className="font-mono" style={{ fontSize: 13, color: "var(--color-red)", fontWeight: 600 }}>
               Backend Unreachable
             </span>
