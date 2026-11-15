@@ -128,14 +128,25 @@ export default function SummaryStrip({ cases }: Props) {
           className="card"
           style={{
             padding: '18px 20px',
-            background: 'linear-gradient(180deg, #131A27 0%, #0F1622 100%)',
+            background: 'linear-gradient(180deg, #141E2D 0%, #0E1624 100%)',
             border: '1px solid var(--color-ink-border)',
             borderRadius: 8,
-            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.25)',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
             minHeight: 135,
+            transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            const el = e.currentTarget as HTMLElement
+            el.style.borderColor = '#2A3D55'
+            el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.45)'
+          }}
+          onMouseLeave={(e) => {
+            const el = e.currentTarget as HTMLElement
+            el.style.borderColor = 'var(--color-ink-border)'
+            el.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.35)'
           }}
         >
           <div>

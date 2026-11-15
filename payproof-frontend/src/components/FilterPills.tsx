@@ -17,16 +17,17 @@ const FILTERS: { label: string; value: FilterValue }[] = [
 ]
 
 /**
- * Filter pill row ??? lets the user narrow the case list by status.
+ * Filter pill row — lets the user narrow the case list by status.
+ * Visual-only update: improved hover, spacing, border radius.
+ * All filter logic and onChange handlers are preserved exactly.
  */
 export default function FilterPills({ active, onChange }: Props) {
   return (
     <div
       style={{
         display: 'flex',
-        gap: 8,
+        gap: 6,
         flexWrap: 'wrap',
-        marginBottom: 20,
       }}
       role="group"
       aria-label="Filter cases by status"
@@ -40,24 +41,39 @@ export default function FilterPills({ active, onChange }: Props) {
             type="button"
             onClick={() => onChange(f.value)}
             style={{
-              padding: '5px 14px',
-              borderRadius: 4,
+              padding: '6px 14px',
+              borderRadius: 6,
               border: isActive
                 ? '1px solid var(--color-teal)'
                 : '1px solid var(--color-ink-border)',
               background: isActive
-                ? 'rgba(63, 167, 150, 0.15)'
-                : 'transparent',
+                ? 'rgba(54, 198, 174, 0.14)'
+                : 'var(--color-ink-mid)',
               color: isActive
                 ? 'var(--color-teal)'
-                : 'var(--color-slate)',
+                : 'var(--color-slate-light)',
               fontFamily: 'var(--font-mono)',
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: 600,
-              letterSpacing: '0.05em',
+              letterSpacing: '0.06em',
               textTransform: 'uppercase' as const,
               cursor: 'pointer',
               transition: 'all 0.15s ease',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) {
+                const btn = e.currentTarget as HTMLButtonElement
+                btn.style.borderColor = 'var(--color-slate)'
+                btn.style.color = 'var(--color-white)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) {
+                const btn = e.currentTarget as HTMLButtonElement
+                btn.style.borderColor = 'var(--color-ink-border)'
+                btn.style.color = 'var(--color-slate-light)'
+              }
             }}
           >
             {f.label}

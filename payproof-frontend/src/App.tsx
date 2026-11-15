@@ -37,32 +37,61 @@ export default function App() {
           type="button"
           id="btn-new-case"
           onClick={navButtonAction}
-          style={{
-            padding: '7px 16px',
-            borderRadius: 5,
-            border: '1px solid var(--color-teal)',
-            background: 'rgba(63, 167, 150, 0.12)',
-            color: 'var(--color-teal)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 12,
-            fontWeight: 600,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-            transition: 'background 0.15s ease',
+          style={
+            view.type === 'dashboard'
+              ? {
+                  padding: '8px 18px',
+                  borderRadius: 6,
+                  border: 'none',
+                  background: 'var(--color-teal)',
+                  color: '#0B1120',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: '0.07em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  transition: 'background 0.15s ease, transform 0.1s ease',
+                  boxShadow: '0 2px 8px rgba(54,198,174,0.3)',
+                }
+              : {
+                  padding: '8px 18px',
+                  borderRadius: 6,
+                  border: '1px solid var(--color-ink-border)',
+                  background: 'var(--color-ink-mid)',
+                  color: 'var(--color-slate-light)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  letterSpacing: '0.07em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  transition: 'background 0.15s ease',
+                }
+          }
+          onMouseEnter={(e) => {
+            const btn = e.currentTarget as HTMLButtonElement
+            if (view.type === 'dashboard') {
+              btn.style.background = 'var(--color-teal-dim)'
+            } else {
+              btn.style.background = '#1E2D45'
+              btn.style.color = 'var(--color-white)'
+            }
           }}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLButtonElement).style.background =
-              'rgba(63, 167, 150, 0.22)')
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLButtonElement).style.background =
-              'rgba(63, 167, 150, 0.12)')
-          }
+          onMouseLeave={(e) => {
+            const btn = e.currentTarget as HTMLButtonElement
+            if (view.type === 'dashboard') {
+              btn.style.background = 'var(--color-teal)'
+            } else {
+              btn.style.background = 'var(--color-ink-mid)'
+              btn.style.color = 'var(--color-slate-light)'
+            }
+          }}
         >
           {navButtonText}
         </button>
       </NavBar>
+
 
       {view.type === 'dashboard' && (
         <Dashboard onSelectCase={(id) => setView({ type: 'case_detail', id })} />

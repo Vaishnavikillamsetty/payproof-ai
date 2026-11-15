@@ -50,9 +50,12 @@ function DataSourceBadge({ fromWebhook, isDemo, txn }: { fromWebhook: boolean; i
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="font-mono text-slate" style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16, marginTop: 32 }}>
-      {children}
-    </h2>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, marginTop: 32 }}>
+      <div style={{ width: 2, height: 14, background: 'var(--color-teal)', borderRadius: 1, flexShrink: 0 }} />
+      <h2 className="font-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-slate-light)', margin: 0 }}>
+        {children}
+      </h2>
+    </div>
   )
 }
 
@@ -347,15 +350,20 @@ export default function CaseDetail({ caseId, onBack }: Props) {
             onClick={() => setIsUploadOpen(true)}
             style={{
               background: 'var(--color-teal)',
-              color: 'var(--color-ink-dark)',
+              color: '#0B1120',
               border: 'none',
-              padding: '6px 14px',
-              borderRadius: 4,
+              padding: '8px 16px',
+              borderRadius: 7,
               fontFamily: 'var(--font-mono)',
               fontSize: 12,
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: 'pointer',
+              letterSpacing: '0.05em',
+              boxShadow: '0 2px 8px rgba(54,198,174,0.25)',
+              transition: 'background 0.15s ease',
             }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal-dim)' }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal)' }}
           >
             + Upload Evidence
           </button>
@@ -398,14 +406,14 @@ export default function CaseDetail({ caseId, onBack }: Props) {
               onChange={(e) => setReviewerId(e.target.value)}
               placeholder="analyst_id"
               style={{
-                background: 'var(--color-ink-dark)',
+                background: 'var(--color-ink-mid)',
                 border: '1px solid var(--color-ink-border)',
                 color: 'var(--color-white)',
-                padding: '2px 8px',
-                borderRadius: 3,
+                padding: '5px 10px',
+                borderRadius: 6,
                 fontSize: 11,
                 fontFamily: 'var(--font-mono)',
-                width: 130,
+                width: 150,
               }}
             />
           </div>
@@ -505,14 +513,15 @@ export default function CaseDetail({ caseId, onBack }: Props) {
                   rows={3}
                   style={{
                     width: '100%',
-                    padding: '10px 12px',
-                    background: 'var(--color-ink-dark)',
+                    padding: '10px 14px',
+                    background: 'var(--color-ink-mid)',
                     border: '1px solid var(--color-ink-border)',
-                    borderRadius: 4,
+                    borderRadius: 7,
                     color: 'var(--color-white)',
                     fontSize: 13,
                     fontFamily: 'var(--font-body)',
-                    boxSizing: 'border-box',
+                    boxSizing: 'border-box' as const,
+                    resize: 'vertical' as const,
                   }}
                 />
               </div>
@@ -523,34 +532,42 @@ export default function CaseDetail({ caseId, onBack }: Props) {
                   onClick={() => setConfirmAction('approve')}
                   disabled={decisionSubmitting !== null}
                   style={{
-                    padding: '10px 18px',
-                    background: 'transparent',
+                    padding: '10px 20px',
+                    background: 'rgba(54,198,174,0.10)',
                     border: '1px solid var(--color-teal)',
                     color: 'var(--color-teal)',
-                    borderRadius: 4,
+                    borderRadius: 7,
                     fontFamily: 'var(--font-mono)',
                     fontSize: 12,
-                    fontWeight: 600,
+                    fontWeight: 700,
                     cursor: 'pointer',
+                    letterSpacing: '0.05em',
+                    transition: 'background 0.15s ease',
                   }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(54,198,174,0.20)' }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(54,198,174,0.10)' }}
                 >
-                  APPROVE CLAIM (REFUND)
+                  ✓ APPROVE CLAIM (REFUND)
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmAction('contest')}
                   disabled={decisionSubmitting !== null}
                   style={{
-                    padding: '10px 18px',
-                    background: 'transparent',
+                    padding: '10px 20px',
+                    background: 'rgba(54,198,174,0.06)',
                     border: '1px solid var(--color-teal)',
                     color: 'var(--color-teal)',
-                    borderRadius: 4,
+                    borderRadius: 7,
                     fontFamily: 'var(--font-mono)',
                     fontSize: 12,
-                    fontWeight: 600,
+                    fontWeight: 700,
                     cursor: 'pointer',
+                    letterSpacing: '0.05em',
+                    transition: 'background 0.15s ease',
                   }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(54,198,174,0.16)' }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(54,198,174,0.06)' }}
                 >
                   CONTEST DISPUTE
                 </button>
@@ -559,16 +576,20 @@ export default function CaseDetail({ caseId, onBack }: Props) {
                   onClick={() => setConfirmAction('request_more_evidence')}
                   disabled={decisionSubmitting !== null}
                   style={{
-                    padding: '10px 18px',
-                    background: 'transparent',
+                    padding: '10px 20px',
+                    background: 'rgba(240,168,48,0.08)',
                     border: '1px solid var(--color-amber)',
                     color: 'var(--color-amber)',
-                    borderRadius: 4,
+                    borderRadius: 7,
                     fontFamily: 'var(--font-mono)',
                     fontSize: 12,
-                    fontWeight: 600,
+                    fontWeight: 700,
                     cursor: 'pointer',
+                    letterSpacing: '0.05em',
+                    transition: 'background 0.15s ease',
                   }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(240,168,48,0.18)' }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(240,168,48,0.08)' }}
                 >
                   REQUEST MORE EVIDENCE
                 </button>
@@ -590,7 +611,8 @@ export default function CaseDetail({ caseId, onBack }: Props) {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.7)',
+            background: 'rgba(0,0,0,0.75)',
+            backdropFilter: 'blur(4px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -598,27 +620,37 @@ export default function CaseDetail({ caseId, onBack }: Props) {
             padding: 20,
           }}
         >
-          <div className="card" style={{ maxWidth: 440, width: '100%', padding: 24 }}>
-            <h3 className="font-mono text-white" style={{ margin: '0 0 12px 0', fontSize: 16 }}>
+          <div className="card" style={{ maxWidth: 460, width: '100%', padding: 28, boxShadow: '0 20px 40px rgba(0,0,0,0.5)', border: '1px solid var(--color-ink-border)' }}>
+            <h3 className="font-mono text-white" style={{ margin: '0 0 12px 0', fontSize: 16, letterSpacing: '0.04em' }}>
               Confirm {confirmAction.toUpperCase().replace(/_/g, ' ')}
             </h3>
-            <p className="font-body text-slate-light" style={{ fontSize: 13, lineHeight: 1.5, marginBottom: 20 }}>
+            <p className="font-body text-slate-light" style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 24 }}>
               Are you sure you want to record this decision? This will append an immutable record to the audit trail with
               reviewer ID <strong style={{ color: 'var(--color-white)' }}>{reviewerId}</strong>.
             </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
               <button
                 type="button"
                 onClick={() => setConfirmAction(null)}
                 style={{
-                  background: 'transparent',
+                  background: 'var(--color-ink-mid)',
                   border: '1px solid var(--color-ink-border)',
-                  color: 'var(--color-slate)',
-                  padding: '8px 14px',
-                  borderRadius: 4,
+                  color: 'var(--color-slate-light)',
+                  padding: '9px 18px',
+                  borderRadius: 7,
                   cursor: 'pointer',
                   fontFamily: 'var(--font-mono)',
                   fontSize: 12,
+                  fontWeight: 600,
+                  transition: 'background 0.15s ease, color 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = '#1E2D45'
+                  ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--color-white)'
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-ink-mid)'
+                  ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--color-slate-light)'
                 }}
               >
                 Cancel
@@ -635,15 +667,20 @@ export default function CaseDetail({ caseId, onBack }: Props) {
                 }}
                 style={{
                   background: 'var(--color-teal)',
-                  color: 'var(--color-ink-dark)',
+                  color: '#0B1120',
                   border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: 4,
+                  padding: '9px 20px',
+                  borderRadius: 7,
                   cursor: 'pointer',
                   fontFamily: 'var(--font-mono)',
                   fontSize: 12,
-                  fontWeight: 600,
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  boxShadow: '0 2px 8px rgba(54,198,174,0.3)',
+                  transition: 'background 0.15s ease',
                 }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal-dim)' }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal)' }}
               >
                 {decisionSubmitting ? 'Recording...' : 'Confirm Decision'}
               </button>
@@ -658,7 +695,8 @@ export default function CaseDetail({ caseId, onBack }: Props) {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.7)',
+            background: 'rgba(0,0,0,0.75)',
+            backdropFilter: 'blur(4px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -666,13 +704,13 @@ export default function CaseDetail({ caseId, onBack }: Props) {
             padding: 20,
           }}
         >
-          <div className="card" style={{ maxWidth: 500, width: '100%', padding: 24 }}>
-            <h3 className="font-mono text-white" style={{ margin: '0 0 16px 0', fontSize: 16 }}>
+          <div className="card" style={{ maxWidth: 520, width: '100%', padding: 28, boxShadow: '0 20px 40px rgba(0,0,0,0.5)', border: '1px solid var(--color-ink-border)' }}>
+            <h3 className="font-mono text-white" style={{ margin: '0 0 18px 0', fontSize: 16, letterSpacing: '0.04em' }}>
               Upload Dispute Evidence
             </h3>
             <form onSubmit={handleUploadSubmit}>
-              <div style={{ marginBottom: 14 }}>
-                <label className="font-mono text-slate" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>
+              <div style={{ marginBottom: 16 }}>
+                <label className="font-mono text-slate-light" style={{ fontSize: 11, display: 'block', marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                   CANONICAL CATEGORY
                 </label>
                 <select
@@ -680,12 +718,13 @@ export default function CaseDetail({ caseId, onBack }: Props) {
                   onChange={(e) => setUploadCategory(e.target.value as any)}
                   style={{
                     width: '100%',
-                    padding: '8px 10px',
-                    background: 'var(--color-ink-dark)',
+                    padding: '9px 12px',
+                    background: 'var(--color-ink-mid)',
                     border: '1px solid var(--color-ink-border)',
-                    borderRadius: 4,
+                    borderRadius: 7,
                     color: 'var(--color-white)',
                     fontSize: 13,
+                    fontFamily: 'var(--font-body)',
                   }}
                 >
                   <option value="transaction">1. Transaction & Payment Records</option>
@@ -695,8 +734,8 @@ export default function CaseDetail({ caseId, onBack }: Props) {
                 </select>
               </div>
 
-              <div style={{ marginBottom: 14 }}>
-                <label className="font-mono text-slate" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>
+              <div style={{ marginBottom: 16 }}>
+                <label className="font-mono text-slate-light" style={{ fontSize: 11, display: 'block', marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                   EVIDENCE TYPE SLUG
                 </label>
                 <input
@@ -707,19 +746,20 @@ export default function CaseDetail({ caseId, onBack }: Props) {
                   required
                   style={{
                     width: '100%',
-                    padding: '8px 10px',
-                    background: 'var(--color-ink-dark)',
+                    padding: '9px 12px',
+                    background: 'var(--color-ink-mid)',
                     border: '1px solid var(--color-ink-border)',
-                    borderRadius: 4,
+                    borderRadius: 7,
                     color: 'var(--color-white)',
                     fontSize: 13,
-                    boxSizing: 'border-box',
+                    boxSizing: 'border-box' as const,
+                    fontFamily: 'var(--font-body)',
                   }}
                 />
               </div>
 
-              <div style={{ marginBottom: 14 }}>
-                <label className="font-mono text-slate" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>
+              <div style={{ marginBottom: 16 }}>
+                <label className="font-mono text-slate-light" style={{ fontSize: 11, display: 'block', marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                   ATTACH FILE (STORED IN POSTGRESQL)
                 </label>
                 <input
@@ -727,15 +767,19 @@ export default function CaseDetail({ caseId, onBack }: Props) {
                   onChange={handleFileChange}
                   style={{
                     width: '100%',
-                    padding: '6px 0',
+                    padding: '8px 12px',
+                    background: 'var(--color-ink-mid)',
+                    border: '1px solid var(--color-ink-border)',
+                    borderRadius: 7,
                     color: 'var(--color-slate-light)',
                     fontSize: 12,
+                    boxSizing: 'border-box' as const,
                   }}
                 />
               </div>
 
               <div style={{ marginBottom: 20 }}>
-                <label className="font-mono text-slate" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>
+                <label className="font-mono text-slate-light" style={{ fontSize: 11, display: 'block', marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                   DESCRIPTION / CONTEXT
                 </label>
                 <textarea
@@ -745,36 +789,48 @@ export default function CaseDetail({ caseId, onBack }: Props) {
                   rows={2}
                   style={{
                     width: '100%',
-                    padding: '8px 10px',
-                    background: 'var(--color-ink-dark)',
+                    padding: '9px 12px',
+                    background: 'var(--color-ink-mid)',
                     border: '1px solid var(--color-ink-border)',
-                    borderRadius: 4,
+                    borderRadius: 7,
                     color: 'var(--color-white)',
                     fontSize: 13,
-                    boxSizing: 'border-box',
+                    boxSizing: 'border-box' as const,
+                    fontFamily: 'var(--font-body)',
+                    resize: 'vertical' as const,
                   }}
                 />
               </div>
 
               {uploadError && (
-                <div className="font-body text-red" style={{ fontSize: 12, marginBottom: 12, color: 'var(--color-red)' }}>
+                <div className="font-body text-red" style={{ fontSize: 12, marginBottom: 14, color: 'var(--color-red)' }}>
                   {uploadError}
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
                 <button
                   type="button"
                   onClick={() => setIsUploadOpen(false)}
                   style={{
-                    background: 'transparent',
+                    background: 'var(--color-ink-mid)',
                     border: '1px solid var(--color-ink-border)',
-                    color: 'var(--color-slate)',
-                    padding: '8px 14px',
-                    borderRadius: 4,
+                    color: 'var(--color-slate-light)',
+                    padding: '9px 18px',
+                    borderRadius: 7,
                     cursor: 'pointer',
                     fontFamily: 'var(--font-mono)',
                     fontSize: 12,
+                    fontWeight: 600,
+                    transition: 'background 0.15s ease, color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = '#1E2D45'
+                    ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--color-white)'
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-ink-mid)'
+                    ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--color-slate-light)'
                   }}
                 >
                   Cancel
@@ -784,15 +840,20 @@ export default function CaseDetail({ caseId, onBack }: Props) {
                   disabled={uploading}
                   style={{
                     background: 'var(--color-teal)',
-                    color: 'var(--color-ink-dark)',
+                    color: '#0B1120',
                     border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: 4,
+                    padding: '9px 20px',
+                    borderRadius: 7,
                     cursor: 'pointer',
                     fontFamily: 'var(--font-mono)',
                     fontSize: 12,
-                    fontWeight: 600,
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                    boxShadow: '0 2px 8px rgba(54,198,174,0.3)',
+                    transition: 'background 0.15s ease',
                   }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal-dim)' }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal)' }}
                 >
                   {uploading ? 'Uploading...' : 'Save & Attach Evidence'}
                 </button>

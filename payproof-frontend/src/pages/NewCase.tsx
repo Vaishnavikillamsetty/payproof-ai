@@ -80,33 +80,58 @@ export default function NewCase({ onCancel, onSuccess }: Props) {
 
   const inputStyle = {
     width: '100%',
-    background: 'var(--color-ink-light)',
+    background: 'var(--color-ink-mid)',
     border: '1px solid var(--color-ink-border)',
     color: 'var(--color-white)',
     padding: '10px 14px',
-    borderRadius: 6,
+    borderRadius: 7,
     fontFamily: 'var(--font-body)',
-    fontSize: 15,
+    fontSize: 14,
     outline: 'none',
+    transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
   }
 
   const labelStyle = {
     display: 'block',
     fontFamily: 'var(--font-mono)',
-    fontSize: 12,
-    color: 'var(--color-slate)',
-    marginBottom: 6,
+    fontSize: 11,
+    color: 'var(--color-slate-light)',
+    marginBottom: 7,
     textTransform: 'uppercase' as const,
+    letterSpacing: '0.08em',
+    fontWeight: 600,
   }
 
   return (
-    <main style={{ maxWidth: 600, margin: '60px auto', padding: '0 24px' }}>
-      <h1 className="font-body" style={{ fontSize: 28, color: 'var(--color-white)', marginBottom: 32, fontWeight: 600 }}>
-        New Dispute Case
-      </h1>
+    <main style={{ maxWidth: 620, margin: '48px auto', padding: '0 24px' }}>
+      {/* Page heading */}
+      <div style={{ marginBottom: 36 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+          <div style={{ width: 3, height: 20, background: 'var(--color-teal)', borderRadius: 2, flexShrink: 0 }} />
+          <span className="font-mono" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--color-teal)' }}>
+            Case Submission
+          </span>
+        </div>
+        <h1 className="font-body" style={{ fontSize: 28, color: 'var(--color-white)', fontWeight: 700, lineHeight: 1.2 }}>
+          New Dispute Case
+        </h1>
+      </div>
 
       {error && (
-        <div style={{ background: 'rgba(214, 72, 60, 0.1)', border: '1px solid var(--color-red)', padding: 16, borderRadius: 6, marginBottom: 24, color: 'var(--color-red)', fontFamily: 'var(--font-body)' }}>
+        <div style={{
+          background: 'rgba(224, 82, 82, 0.08)',
+          border: '1px solid rgba(224, 82, 82, 0.4)',
+          padding: '14px 18px',
+          borderRadius: 7,
+          marginBottom: 24,
+          color: 'var(--color-red)',
+          fontFamily: 'var(--font-body)',
+          fontSize: 13,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+        }}>
+          <span style={{ fontSize: 16 }}>?</span>
           {error}
         </div>
       )}
@@ -128,21 +153,29 @@ export default function NewCase({ onCancel, onSuccess }: Props) {
             setCustomerClaim(scenario.customerClaim)
           }}
           style={{
-            padding: '10px 16px',
-            background: 'var(--color-ink-light)',
+            padding: '11px 18px',
+            background: 'var(--color-ink-mid)',
             border: '1px solid var(--color-ink-border)',
-            borderRadius: 6,
+            borderLeft: '3px solid var(--color-teal)',
+            borderRadius: 7,
             color: 'var(--color-white)',
             fontFamily: 'var(--font-mono)',
             fontSize: 12,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
-            transition: 'background 0.2s ease',
+            gap: 10,
+            transition: 'background 0.15s ease, border-color 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = '#1E2D45'
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-ink-mid)'
           }}
         >
-          <span style={{ color: 'var(--color-teal)' }}>&#8635;</span> Load Next Demo Scenario
+          <span style={{ color: 'var(--color-teal)', fontSize: 16, lineHeight: 1 }}>&#8635;</span>
+          Load Next Demo Scenario
         </button>
       </div>
 
@@ -150,7 +183,7 @@ export default function NewCase({ onCancel, onSuccess }: Props) {
       <p className="font-mono text-slate" style={{ fontSize: 12, textTransform: 'uppercase', marginBottom: 12, letterSpacing: '0.05em' }}>
         Manual Case Entry
       </p>
-      <form onSubmit={handleSubmit} className="card" style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <form onSubmit={handleSubmit} className="card" style={{ padding: '32px 36px', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
         <div>
           <label style={labelStyle}>Transaction ID</label>
@@ -231,9 +264,28 @@ export default function NewCase({ onCancel, onSuccess }: Props) {
             onClick={onCancel}
             disabled={loading}
             style={{
-              background: 'transparent', border: '1px solid var(--color-ink-border)',
-              color: 'var(--color-slate)', padding: '10px 20px', borderRadius: 6,
-              cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-mono)', fontSize: 13, textTransform: 'uppercase',
+              background: 'var(--color-ink-mid)',
+              border: '1px solid var(--color-ink-border)',
+              color: 'var(--color-slate-light)',
+              padding: '10px 22px',
+              borderRadius: 7,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              textTransform: 'uppercase',
+              letterSpacing: '0.07em',
+              fontWeight: 600,
+              transition: 'color 0.15s ease, border-color 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) {
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-white)'
+                ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-slate)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-slate-light)'
+              ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-ink-border)'
             }}
           >
             Cancel
@@ -242,10 +294,29 @@ export default function NewCase({ onCancel, onSuccess }: Props) {
             type="submit"
             disabled={loading}
             style={{
-              background: 'var(--color-teal)', border: 'none',
-              color: '#000', padding: '10px 24px', borderRadius: 6,
-              cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, textTransform: 'uppercase',
-              opacity: loading ? 0.7 : 1,
+              background: loading ? 'var(--color-teal-dim)' : 'var(--color-teal)',
+              border: 'none',
+              color: '#0B1120',
+              padding: '10px 28px',
+              borderRadius: 7,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.07em',
+              boxShadow: loading ? 'none' : '0 2px 8px rgba(54,198,174,0.3)',
+              transition: 'background 0.15s ease, box-shadow 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) {
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal-dim)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) {
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-teal)'
+              }
             }}
           >
             {loading ? 'Submitting...' : 'Create Case'}

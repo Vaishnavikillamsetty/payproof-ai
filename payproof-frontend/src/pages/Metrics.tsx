@@ -119,12 +119,15 @@ export default function Metrics() {
 
       {/* ── Page heading ── */}
       <div style={{ marginBottom: 40 }}>
-        <h1 className="font-mono text-slate" style={{ fontSize: 13, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+          <div style={{ width: 3, height: 20, background: 'var(--color-teal)', borderRadius: 2, flexShrink: 0 }} />
+          <span className="font-mono" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--color-teal)' }}>
+            System Evaluation
+          </span>
+        </div>
+        <h1 className="font-body text-white" style={{ fontSize: 30, fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.01em' }}>
           Performance Metrics
         </h1>
-        <p className="font-body text-white" style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.2 }}>
-          System Evaluation
-        </p>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
