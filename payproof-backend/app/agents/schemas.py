@@ -13,6 +13,7 @@ from pydantic import BaseModel, field_validator
 
 class RecommendedAction(str, Enum):
     ACCEPT = "ACCEPT"
+    APPROVE = "APPROVE"
     CONTEST = "CONTEST"
     ESCALATE = "ESCALATE"
     REQUEST_MORE_EVIDENCE = "REQUEST_MORE_EVIDENCE"

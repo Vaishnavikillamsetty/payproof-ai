@@ -1,7 +1,7 @@
 import type { Evidence } from '../types'
 
 interface Props {
-  /** 0-100 */
+  /** 0-100 or computed from categories */
   score: number | null
   /** Show a text label beside the bar */
   showLabel?: boolean
@@ -9,54 +9,55 @@ interface Props {
   showChecklist?: boolean
   /** List of evidence records for the case */
   evidence?: Evidence[]
+  /** Explicit list of canonical categories available (transaction, customer, delivery, merchant) */
+  categoriesAvailable?: string[]
 }
 
-const CRITICAL_EVIDENCE = [
-  { id: 'payment', label: 'Payment record' },
-  { id: 'delivery', label: 'Delivery confirmation' },
-  { id: 'otp', label: 'OTP / Verification' },
-  { id: 'communication', label: 'Merchant communication' }
+const CANONICAL_CATEGORIES = [
+  { id: 'transaction', label: 'Transaction & Payment' },
+  { id: 'customer', label: 'Customer & Authentication' },
+  { id: 'delivery', label: 'Delivery & Fulfilment' },
+  { id: 'merchant', label: 'Merchant Records' },
 ]
 
-/**
- * Progress bar showing evidence completeness score, plus an itemized checklist.
- */
-export default function CompletenessBar({ score, showLabel = true, showChecklist = false, evidence = [] }: Props) {
-  if (score === null) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div
-          style={{
-            flex: 1,
-            height: 4,
-            borderRadius: 2,
-            background: 'var(--color-ink-border)',
-          }}
-        />
-        {showLabel && (
-          <span
-            className="font-mono text-slate"
-            style={{ fontSize: 12, minWidth: 32, textAlign: 'right' }}
-          >
-            --
-          </span>
-        )}
-      </div>
-    )
+function mapTypeToCategory(typeStr?: string | null): string | null {
+  if (!typeStr) return null
+  const t = typeStr.toLowerCase()
+  if (['payment', 'refund', 'gateway', 'charge', 'transaction'].includes(t)) return 'transaction'
+  if (['communication', 'customer', 'otp', 'auth', 'authentication'].includes(t)) return 'customer'
+  if (['delivery', 'tracking', 'fulfillment', 'fulfilment', 'shipping', 'proof_of_receipt'].includes(t)) return 'delivery'
+  if (['merchant', 'merchant_communication', 'policy', 'refund_policy', 'invoice', 'receipt', 'merchant_notes'].includes(t)) return 'merchant'
+  return null
+}
+
+export default function CompletenessBar({
+  score,
+  showLabel = true,
+  showChecklist = false,
+  evidence = [],
+  categoriesAvailable,
+}: Props) {
+  const availableSet = new Set<string>()
+  if (categoriesAvailable && categoriesAvailable.length > 0) {
+    categoriesAvailable.forEach(c => availableSet.add(c.toLowerCase()))
+  } else {
+    for (const e of evidence) {
+      const cat = e.category?.toLowerCase() || mapTypeToCategory(e.evidence_type)
+      if (cat) availableSet.add(cat)
+    }
   }
 
-  const pct = Math.max(0, Math.min(100, score))
+  const count = availableSet.size
+  const effectivePct = score !== null && score !== undefined ? Math.max(0, Math.min(100, score)) : Math.round((count / 4) * 100)
   const color =
-    pct >= 70
+    effectivePct >= 75
       ? 'var(--color-teal)'
-      : pct >= 40
+      : effectivePct >= 50
         ? 'var(--color-amber)'
         : 'var(--color-red)'
 
-  // Determine what is missing and what is present
-  const presentTypes = new Set(evidence.map(e => e.evidence_type))
-  const available = CRITICAL_EVIDENCE.filter(c => presentTypes.has(c.id))
-  const missing = CRITICAL_EVIDENCE.filter(c => !presentTypes.has(c.id))
+  const available = CANONICAL_CATEGORIES.filter(c => availableSet.has(c.id))
+  const missing = CANONICAL_CATEGORIES.filter(c => !availableSet.has(c.id))
 
   return (
     <div>
@@ -70,14 +71,14 @@ export default function CompletenessBar({ score, showLabel = true, showChecklist
             overflow: 'hidden',
           }}
           role="progressbar"
-          aria-valuenow={pct}
+          aria-valuenow={effectivePct}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-label={`Evidence completeness ${pct}%`}
+          aria-label={`Evidence completeness ${effectivePct}%`}
         >
           <div
             style={{
-              width: `${pct}%`,
+              width: `${effectivePct}%`,
               height: '100%',
               background: color,
               borderRadius: 2,
@@ -90,11 +91,11 @@ export default function CompletenessBar({ score, showLabel = true, showChecklist
             className="font-mono"
             style={{ fontSize: 12, color, minWidth: 32, textAlign: 'right' }}
           >
-            {available.length} / 4 categories available
+            {count} / 4 categories available
           </span>
         )}
       </div>
-      
+
       {showChecklist && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
           <div>

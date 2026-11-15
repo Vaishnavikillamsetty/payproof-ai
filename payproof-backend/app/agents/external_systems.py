@@ -8,15 +8,10 @@ Dynamic fallback: if no seeded records exist for a transaction_id, uses a
 deterministic hash of the ID to generate a realistic evidence profile, so that
 any arbitrary transaction ID entered in the UI produces a meaningful, varied outcome
 rather than always defaulting to human_review.
-
-Scenario distribution (deterministic by hash):
-  hash % 10 in 0-3  (40%) → full evidence  → strong_case  (payment+delivery+otp+comms)
-  hash % 10 in 4-6  (30%) → sparse evidence → weak_case    (payment only)
-  hash % 10 in 7-8  (20%) → contradiction   → human_review (payment+delivery vs "not received")
-  hash % 10 == 9    (10%) → zero evidence   → human_review (no records at all)
 """
 
 import hashlib
+import logging
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
@@ -28,13 +23,16 @@ from app.db.models import (
     OtpLog,
     PaymentGatewayRecord,
 )
+from app.evidence_categories import map_to_canonical_category
+
+logger = logging.getLogger(__name__)
 
 DEMO_NOTE = "[DEMO] Retrieved from seeded external system mock"
 FALLBACK_NOTE = "[DEMO] Dynamically generated for demonstration"
 
 
 # --------------------------------------------------------------------------- #
-# Helpers
+# Helpers                                                                     #
 # --------------------------------------------------------------------------- #
 
 def _hash_scenario(transaction_id: str) -> int:
@@ -61,33 +59,58 @@ def get_demo_expected_amount(db: Session, transaction_id: str) -> float | None:
     if not base_id.startswith("DEMO_"):
         return None
         
-    # Check if it has a seeded payment record first
     payment = db.query(PaymentGatewayRecord).filter_by(transaction_id=base_id).first()
     if payment:
         return float(payment.amount)
         
-    # Hardcoded overrides for specific empty/edge-case demo IDs that deliberately lack payment records
     if transaction_id == "DEMO_TXN_EMPTY_1":
         return 150.0
         
-    # If it starts with DEMO_TXN_ but isn't seeded and isn't EMPTY_1, 
-    # it's an unknown/invalid demo ID. We don't have an expected amount.
     return None
 
 
-def _add_evidence(db: Session, case, ev_type: str, source_id, content: dict,
-                  event_timestamp: datetime, note: str) -> None:
+def _add_evidence(
+    db: Session,
+    case,
+    ev_type: str,
+    source_id,
+    content: dict,
+    event_timestamp: datetime,
+    note: str,
+    filename: str = None,
+    description: str = None
+) -> None:
+    category = map_to_canonical_category(ev_type)
+    
+    # Set verification status based on evidence source
+    v_status = "unverified"
+    if ev_type in ("payment", "transaction"):
+        status_val = str(content.get("status", "")).lower()
+        if status_val in ("success", "captured", "paid", "settled"):
+            v_status = "verified"
+    elif ev_type in ("delivery", "fulfillment"):
+        if str(content.get("status", "")).lower() == "delivered":
+            v_status = "verified"
+    elif ev_type in ("otp", "auth"):
+        if content.get("verified") is True:
+            v_status = "verified"
+
+    clean_txn = str(case.transaction_id)[:14]
     db.add(Evidence(
         case_id=case.id,
         evidence_type=ev_type,
+        category=category,
         source_id=source_id,
+        filename=filename or f"{ev_type}_{clean_txn}.json",
+        description=description or f"{category.capitalize() if category else ev_type.capitalize()} evidence for {clean_txn}",
+        verification_status=v_status,
         content={**content, "note": note},
         event_timestamp=event_timestamp,
     ))
 
 
 # --------------------------------------------------------------------------- #
-# Seeded DB lookup (primary path)
+# Seeded DB lookup (primary path)                                             #
 # --------------------------------------------------------------------------- #
 
 def _fetch_seeded(case, db: Session, base_date: datetime) -> int:
@@ -102,7 +125,9 @@ def _fetch_seeded(case, db: Session, base_date: datetime) -> int:
         _add_evidence(db, case, "payment", txn_id,
                       {"amount": float(rec.amount), "currency": rec.currency,
                        "status": rec.status},
-                      rec.timestamp or base_date, DEMO_NOTE)
+                      rec.timestamp or base_date, DEMO_NOTE,
+                      filename=f"payment_{base_id}.json",
+                      description=f"Payment Gateway log for {rec.currency} {rec.amount}")
         created += 1
 
     for rec in db.query(DeliveryRecord).filter(
@@ -111,7 +136,9 @@ def _fetch_seeded(case, db: Session, base_date: datetime) -> int:
         _add_evidence(db, case, "delivery", rec.tracking_number,
                       {"status": rec.status, "signed_by": rec.signed_by,
                        "address_match": rec.address_match, "notes": rec.notes},
-                      rec.timestamp or base_date, DEMO_NOTE)
+                      rec.timestamp or base_date, DEMO_NOTE,
+                      filename=f"delivery_{rec.tracking_number}.json",
+                      description=f"Carrier delivery confirmation for tracking {rec.tracking_number}")
         created += 1
 
     for rec in db.query(OtpLog).filter(
@@ -119,7 +146,9 @@ def _fetch_seeded(case, db: Session, base_date: datetime) -> int:
     ).all():
         _add_evidence(db, case, "otp", None,
                       {"verified": rec.verified, "ip_address": rec.ip_address},
-                      rec.timestamp or base_date, DEMO_NOTE)
+                      rec.timestamp or base_date, DEMO_NOTE,
+                      filename=f"auth_log_{base_id}.json",
+                      description="2FA / OTP verification audit log")
         created += 1
 
     for rec in db.query(CommunicationLog).filter(
@@ -128,7 +157,9 @@ def _fetch_seeded(case, db: Session, base_date: datetime) -> int:
         _add_evidence(db, case, "communication", None,
                       {"channel": rec.channel, "message": rec.message,
                        "has_attachments": rec.has_attachments},
-                      rec.timestamp or base_date, DEMO_NOTE)
+                      rec.timestamp or base_date, DEMO_NOTE,
+                      filename=f"customer_comm_{base_id}.json",
+                      description=f"Customer communication transcript via {rec.channel}")
         created += 1
 
     if created:
@@ -137,62 +168,55 @@ def _fetch_seeded(case, db: Session, base_date: datetime) -> int:
 
 
 # --------------------------------------------------------------------------- #
-# Dynamic fallback (any unknown transaction_id)
+# Dynamic fallback (any unknown transaction_id)                               #
 # --------------------------------------------------------------------------- #
 
 def _fetch_dynamic(case, db: Session, base_date: datetime) -> int:
-    """
-    Generate a deterministic evidence profile based on a hash of the
-    transaction_id so demo/test runs always produce the same scenario for
-    the same ID, but different IDs produce varied outcomes.
-    """
+    """Generate deterministic evidence for unknown transaction IDs."""
     bucket = _hash_scenario(case.transaction_id)
     amount = float(case.amount)
     created = 0
 
     if bucket <= 3:
-        # ── Scenario A (40%): Full evidence → strong_case ──────────────────
+        # Scenario A (40%): Full 4-category evidence
         _add_evidence(db, case, "payment", case.transaction_id,
                       {"amount": amount, "currency": case.currency, "status": "success"},
-                      base_date, FALLBACK_NOTE)
+                      base_date, FALLBACK_NOTE, filename=f"gateway_{case.transaction_id[:8]}.json")
         _add_evidence(db, case, "delivery", f"TRK-{case.transaction_id[-6:].upper()}",
                       {"status": "delivered", "signed_by": "Customer",
                        "address_match": True, "notes": "Delivered on time"},
-                      base_date + timedelta(days=2), FALLBACK_NOTE)
+                      base_date + timedelta(days=2), FALLBACK_NOTE, filename=f"proof_of_delivery_{case.transaction_id[-6:]}.json")
         _add_evidence(db, case, "otp", None,
                       {"verified": True, "ip_address": "192.168.1.1"},
-                      base_date, FALLBACK_NOTE)
-        # Message intentionally includes "cancel" so the cancellation rule doesn't
-        # fire for subscription disputes that have clear evidence.
+                      base_date, FALLBACK_NOTE, filename="otp_auth_log.json")
         _add_evidence(db, case, "communication", None,
                       {"channel": "email",
                        "message": "Please cancel my subscription — I am disputing this charge.",
                        "has_attachments": False},
-                      base_date + timedelta(days=1), FALLBACK_NOTE)
+                      base_date + timedelta(days=1), FALLBACK_NOTE, filename="customer_chat.json")
         created = 4
 
     elif bucket <= 6:
-        # ── Scenario B (30%): Payment only → weak_case ─────────────────────
+        # Scenario B (30%): Payment only (1 category)
         _add_evidence(db, case, "payment", case.transaction_id,
                       {"amount": amount, "currency": case.currency, "status": "success"},
-                      base_date, FALLBACK_NOTE)
+                      base_date, FALLBACK_NOTE, filename=f"gateway_{case.transaction_id[:8]}.json")
         created = 1
 
     elif bucket <= 8:
-        # ── Scenario C (20%): Payment + contradicting delivery → human_review
-        # Works most dramatically when dispute_reason is "product not received"
+        # Scenario C (20%): Payment + Delivery contradiction
         _add_evidence(db, case, "payment", case.transaction_id,
                       {"amount": amount, "currency": case.currency, "status": "success"},
-                      base_date, FALLBACK_NOTE)
+                      base_date, FALLBACK_NOTE, filename=f"gateway_{case.transaction_id[:8]}.json")
         _add_evidence(db, case, "delivery", f"TRK-{case.transaction_id[-6:].upper()}",
                       {"status": "delivered", "signed_by": "Front Desk",
                        "address_match": True,
                        "notes": "Signed and accepted at reception"},
-                      base_date + timedelta(days=3), FALLBACK_NOTE)
+                      base_date + timedelta(days=3), FALLBACK_NOTE, filename="delivery_reception.json")
         created = 2
 
     else:
-        # ── Scenario D (10%): No evidence → human_review ───────────────────
+        # Scenario D (10%): No evidence (0/4)
         created = 0
 
     if created:
@@ -201,28 +225,26 @@ def _fetch_dynamic(case, db: Session, base_date: datetime) -> int:
 
 
 # --------------------------------------------------------------------------- #
-# Public API called by the orchestrator
+# Public API called by the orchestrator                                       #
 # --------------------------------------------------------------------------- #
 
 def fetch_external_evidence(case, db: Session) -> int:
-    """
-    Queries mock external systems for the given case.transaction_id.
-    Copies matching records into the Evidence table.
-    Returns the number of evidence records created.
-
-    Strategy:
-      1. Try the seeded DB tables first (exact DEMO_TXN_* records).
-      2. If the ID is a known DEMO_TXN_* prefix ID, skip the fallback entirely
-         (e.g. DEMO_TXN_EMPTY_1 must stay empty even if nothing is seeded).
-      3. For any other arbitrary ID, use the deterministic hash-based fallback
-         so demos always produce varied, realistic outcomes.
-    """
-    # IDs that are intentionally seeded (or intentionally empty) — never fallback
+    """Queries external systems or seed records for the given case."""
     SEEDED_ID_PREFIXES = ("DEMO_TXN_", "DEMO_SCN_")
 
     base_date = case.created_at or datetime.now(timezone.utc)
-
     created = _fetch_seeded(case, db, base_date)
+
+    # If demo tables were empty when DEMO_SCN_* was queried, auto-seed and retry
+    if created == 0 and case.transaction_id.startswith("DEMO_SCN_"):
+        count = db.query(PaymentGatewayRecord).count()
+        if count == 0:
+            try:
+                from scripts.seed_evidence_db import seed_db
+                seed_db()
+                created = _fetch_seeded(case, db, base_date)
+            except Exception as e:
+                logger.warning("Could not auto-seed demo records: %s", e)
 
     if created == 0:
         txn_id = case.transaction_id

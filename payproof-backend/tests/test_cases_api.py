@@ -157,7 +157,8 @@ def test_human_review_approve():
     r = client.post(f"/cases/{case_id}/review", json={"action": "approve", "notes": "LGTM"})
     assert r.status_code == 200
     assert r.json()["ai_recommendation"] == "ESCALATE"
-    assert r.json()["status"] == "escalated"
+    assert r.json()["status"] == "DECISION_RECORDED"
+    assert r.json()["human_decision"] == "APPROVE"
     assert r.json()["final_action"] == "APPROVE"
 
 def test_human_review_contest():
@@ -173,7 +174,8 @@ def test_human_review_contest():
     r = client.post(f"/cases/{case_id}/review", json={"action": "contest", "notes": "Manager needed"})
     assert r.status_code == 200
     assert r.json()["ai_recommendation"] == "ESCALATE"
-    assert r.json()["status"] == "escalated"
+    assert r.json()["status"] == "DECISION_RECORDED"
+    assert r.json()["human_decision"] == "CONTEST"
     assert r.json()["final_action"] == "CONTEST"
 
 def test_human_review_request_more_evidence():
@@ -189,7 +191,8 @@ def test_human_review_request_more_evidence():
     r = client.post(f"/cases/{case_id}/review", json={"action": "request_more_evidence", "notes": "Need tracking"})
     assert r.status_code == 200
     assert r.json()["ai_recommendation"] == "ESCALATE"
-    assert r.json()["status"] == "escalated"
+    assert r.json()["status"] == "EVIDENCE_REQUESTED"
+    assert r.json()["human_decision"] == "REQUEST_MORE_EVIDENCE"
     assert r.json()["final_action"] == "REQUEST_MORE_EVIDENCE"
 
 def test_human_review_invalid_action():

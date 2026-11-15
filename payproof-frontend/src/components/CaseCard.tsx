@@ -10,6 +10,7 @@ interface Props {
 }
 
 const REC_COLORS: Record<string, string> = {
+  APPROVE: 'var(--color-teal)',
   CONTEST: 'var(--color-teal)',
   ACCEPT: 'var(--color-teal)',
   'REQUEST MORE EVIDENCE': 'var(--color-amber)',
@@ -19,18 +20,22 @@ const REC_COLORS: Record<string, string> = {
   PENDING: 'var(--color-slate)',
 }
 
+const STRENGTH_COLORS: Record<string, string> = {
+  HIGH: 'var(--color-teal)',
+  MEDIUM: 'var(--color-amber)',
+  LOW: 'var(--color-red)',
+  NOT_EVALUATED: 'var(--color-slate)',
+}
+
 export default function CaseCard({ case_: c, index, onSelect }: Props) {
   const shouldReduceMotion = useReducedMotion()
-  const lifecycle = lifecycleStatus(c.status, c.ai_recommendation, c.final_action)
+  const lifecycle = lifecycleStatus(c.status, c.ai_recommendation, c.human_decision ?? c.final_action)
   const theme = statusTheme(lifecycle)
   const rec = c.ai_recommendation ? aiRecommendationLabel(c.ai_recommendation) : '-'
   const recColor = c.ai_recommendation ? (REC_COLORS[rec] ?? 'var(--color-slate)') : 'var(--color-slate)'
   const isDemo = isDemoCase(c.transaction_id)
-
-  const confidence =
-    c.overall_confidence !== null && c.overall_confidence !== undefined
-      ? `${Math.round(c.overall_confidence * 100)}%`
-      : '--'
+  const strength = (c.evidence_strength || 'NOT_EVALUATED').toUpperCase()
+  const strengthColor = STRENGTH_COLORS[strength] || 'var(--color-slate)'
 
   return (
     <motion.div
@@ -87,15 +92,21 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
           </div>
         </div>
 
-        {/* ---- Col 2: Completeness ---- */}
+        {/* ---- Col 2: Evidence Categories & Strength ---- */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-            <span className="font-body text-slate" style={{ fontSize: 10 }}>Evidence Strength</span>
-            <span className="font-mono text-slate" style={{ fontSize: 10 }}>{confidence}</span>
+            <span className="font-body text-slate" style={{ fontSize: 10 }}>Evidence</span>
+            <span
+              className="font-mono"
+              style={{ fontSize: 10, color: strengthColor, fontWeight: 600 }}
+            >
+              {strength}
+            </span>
           </div>
           <CompletenessBar
             score={c.completeness_score}
             showLabel={true}
+            categoriesAvailable={c.categories_available}
             evidence={(c.evidence_types ?? []).map((t, i) => ({
               id: `${c.id}-ev-${i}`,
               case_id: c.id,
@@ -120,7 +131,7 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
           <span className="font-mono text-slate" style={{ fontSize: 10 }}>{formatDate(c.created_at)}</span>
         </div>
 
-        {/* ---- Col 4: AI Recommendation ---- */}
+        {/* ---- Col 4: AI Recommendation & Human Decision ---- */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
           <span className="font-mono text-slate" style={{ fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase' }}>AI Recommendation</span>
           <span
@@ -129,6 +140,11 @@ export default function CaseCard({ case_: c, index, onSelect }: Props) {
           >
             {rec}
           </span>
+          {c.human_decision && (
+            <span className="font-mono text-slate" style={{ fontSize: 10 }}>
+              Human: <strong style={{ color: 'var(--color-white)' }}>{c.human_decision.toUpperCase()}</strong>
+            </span>
+          )}
         </div>
 
         {/* ---- Col 5: Chevron ---- */}

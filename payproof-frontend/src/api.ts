@@ -1,10 +1,14 @@
-import type { Case, CaseDetail, AuditEntry, EvalMetrics } from './types'
+import type { Case, CaseDetail, AuditEntry, EvalMetrics, Evidence, EvidenceUploadPayload } from './types'
 
 const BASE = import.meta.env.VITE_API_URL || '/api'
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const reviewerId = localStorage.getItem('payproof_reviewer_id') || 'analyst_current'
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Reviewer-Id': reviewerId,
+    },
     ...options,
   })
   if (!res.ok) {
@@ -14,7 +18,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
-/** Fire-and-forget ping to wake the backend from Render cold sleep. */
 export function warmBackend(): void {
   fetch(`${BASE.replace(/\/+$/, '')}/health`).catch(() => {})
 }
@@ -29,10 +32,28 @@ export const api = {
   resetDemoCases: async (): Promise<any> =>
     request('/cases/demo-reset', { method: 'DELETE' }),
 
-  reviewCase: (id: string, action: string, notes: string): Promise<CaseDetail> =>
+  reviewCase: (id: string, action: string, notes: string, reviewerId?: string): Promise<CaseDetail> =>
     request(`/cases/${id}/review`, {
       method: 'POST',
-      body: JSON.stringify({ action, notes }),
+      body: JSON.stringify({ action, notes, reviewer_id: reviewerId }),
+    }),
+
+  resolveCase: (id: string, notes: string = '', reviewerId?: string): Promise<CaseDetail> =>
+    request(`/cases/${id}/resolve`, {
+      method: 'POST',
+      body: JSON.stringify({ notes, reviewer_id: reviewerId }),
+    }),
+
+  closeCase: (id: string, notes: string = '', reviewerId?: string): Promise<CaseDetail> =>
+    request(`/cases/${id}/close`, {
+      method: 'POST',
+      body: JSON.stringify({ notes, reviewer_id: reviewerId }),
+    }),
+
+  uploadEvidence: (id: string, payload: EvidenceUploadPayload): Promise<Evidence> =>
+    request(`/cases/${id}/evidence`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
 
   getAudit: (id: string): Promise<AuditEntry[]> =>

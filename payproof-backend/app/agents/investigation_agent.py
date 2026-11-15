@@ -2,19 +2,21 @@
 DisputeInvestigationAgent — bounded AI agent.
 
 Architecture:
-  - Uses OpenRouter (openrouter/free) via OpenAI-compatible chat completions
-  - Evidence is gathered directly in Python via existing tool functions
-  - LLM receives a full-context prompt and responds with a JSON recommendation
-  - Falls back to deterministic logic if the LLM fails or returns malformed JSON
-  - Outputs a strictly validated AgentRecommendation (Pydantic)
-  - Never stores chain-of-thought; only evidence-grounded findings
-  - Never writes to the database or performs external actions
+  - Primary LLM: Claude 3.5 Sonnet (via Anthropic SDK)
+  - Secondary LLM: OpenRouter (if OPENROUTER_API_KEY is configured)
+  - Mock Mode: Deterministic mock agent for tests and demos (settings.mock_verifier)
+  - Evidence is gathered directly in Python via tool functions and structured into
+    the 4 canonical categories: TRANSACTION, CUSTOMER, DELIVERY, MERCHANT.
+  - LLM receives complete dispute context and responds with a JSON recommendation.
+  - Safe error handling: If the API call fails, explicitly records AI_ANALYSIS_UNAVAILABLE
+    or deterministic fallback without fabricating silent fake live recommendations.
+  - Never stores chain-of-thought; only evidence-grounded findings.
+  - Never overwrites recorded human decisions.
 """
 
 import json
 import logging
-import os
-
+from typing import Optional
 import httpx
 from sqlalchemy.orm import Session
 from pydantic import ValidationError
@@ -29,94 +31,100 @@ from app.agents.schemas import (
     SourceStatus,
 )
 from app.agents.tools import execute_tool
+from app.evidence_categories import map_to_canonical_category, CANONICAL_CATEGORIES
 
 logger = logging.getLogger(__name__)
 
-MAX_AGENT_STEPS = 5
-
-OPENROUTER_API_BASE = "https://openrouter.ai/api/v1"
-OPENROUTER_REFERER = "https://payproof-frontend.vercel.app"
-OPENROUTER_TITLE = "PayProof AI"
-
-
-# --------------------------------------------------------------------------- #
-# System prompt
-# --------------------------------------------------------------------------- #
-
 SYSTEM_PROMPT = """\
-You are PayProof AI — a dispute investigation agent for Razorpay merchants.
+You are PayProof AI — a dispute investigation agent for payment risk analysis.
 
-GOAL: Investigate a payment dispute by reviewing the provided evidence data, identifying contradictions, and recommending the safest next action.
+GOAL: Investigate a payment dispute by reviewing the provided dispute details and evidence categorized into:
+1. TRANSACTION EVIDENCE (gateway records, amounts, timestamps, refund status)
+2. CUSTOMER EVIDENCE (customer communications, authentication, OTP logs)
+3. DELIVERY / FULFILMENT EVIDENCE (tracking, delivery confirmations, proof of receipt)
+4. MERCHANT EVIDENCE (refund policy, merchant notes, invoices, receipts)
 
 RULES:
-1. Base your recommendation ONLY on the evidence data provided in this message.
-2. Do NOT invent evidence.
-3. If evidence contradicts the customer claim, note it clearly.
-4. If evidence is missing, recommend REQUEST_MORE_EVIDENCE.
-5. Always set human_approval_required to true.
+1. Base your recommendation ONLY on actual evidence data provided in the user prompt.
+2. Do NOT invent evidence or claim that an unprovided document exists.
+3. If evidence is missing or insufficient for a safe decision, recommend REQUEST_MORE_EVIDENCE.
+4. If valid evidence contradicts the customer claim, explain the contradiction and recommend CONTEST.
+5. If evidence shows customer claim is justified (e.g. refund owed, cancelled before charge, duplicate charge), recommend APPROVE.
+6. Always set human_approval_required to true. AI recommendation is advisory only.
 
-When you have enough information, respond with ONLY a JSON object matching this exact schema (no markdown fences, no commentary):
-
+Respond with ONLY a valid JSON object matching this exact schema (no markdown formatting, no backticks):
 {
-  "recommended_action": "CONTEST" | "ACCEPT" | "ESCALATE" | "REQUEST_MORE_EVIDENCE",
+  "recommended_action": "APPROVE" | "CONTEST" | "REQUEST_MORE_EVIDENCE",
   "confidence": <float 0.0-1.0>,
   "risk_level": "LOW" | "MEDIUM" | "HIGH",
   "evidence_strength": "LOW" | "MEDIUM" | "HIGH",
-  "summary": "<one paragraph summary of findings>",
+  "summary": "<clear, factual explanation of findings and rationale>",
   "key_findings": [
-    {"finding": "<what was found>", "source": "<data source>", "importance": "high"|"medium"|"low"}
+    {"finding": "<factual observation>", "source": "<data source>", "importance": "high"|"medium"|"low"}
   ],
-  "missing_evidence": ["<evidence type not found>"],
-  "contradictions": ["<description of contradiction>"],
+  "missing_evidence": ["<specific missing evidence type or category>"],
+  "contradictions": ["<description of contradiction, if any>"],
   "human_approval_required": true,
   "source_status": "COMPLETE" | "PARTIAL" | "LIMITED"
 }
 """
 
 
-# --------------------------------------------------------------------------- #
-# Deterministic fallback
-# --------------------------------------------------------------------------- #
+def _parse_final_json(text: str) -> AgentRecommendation:
+    """Parse and validate the agent's final JSON output."""
+    clean = text.strip()
+    if clean.startswith("```"):
+        lines = clean.split("\n")
+        lines = [l for l in lines if not l.strip().startswith("```")]
+        clean = "\n".join(lines).strip()
+
+    start = clean.find("{")
+    end = clean.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        clean = clean[start:end + 1]
+
+    data = json.loads(clean)
+    return AgentRecommendation(**data)
+
 
 def _deterministic_fallback(
     evidence_types: list[str],
     contradictions_found: bool,
     completeness: int,
     duplicate_payment_detected: bool = False,
+    error_reason: str = "Deterministic safety fallback",
 ) -> AgentRecommendation:
-    """
-    Pure rule-based recommendation when the AI is unavailable.
-    """
+    """Pure rule-based fallback recommendation."""
     if duplicate_payment_detected:
-        action = RecommendedAction.ACCEPT
+        action = RecommendedAction.APPROVE
         risk = RiskLevel.LOW
         strength = EvidenceStrength.HIGH
-        summary = "Multiple successful payments detected for duplicate charge claim. Recommending ACCEPT/refund."
-        confidence = 0.9
+        summary = "Multiple successful payments detected for duplicate charge claim. Recommending APPROVE/refund."
+        confidence = 0.90
     elif contradictions_found:
         action = RecommendedAction.ESCALATE
         risk = RiskLevel.HIGH
         strength = EvidenceStrength.MEDIUM
         summary = "Contradicting evidence detected. Deterministic fallback recommends escalation."
-        confidence = 0.4
+        confidence = 0.40
     elif "refund" in evidence_types:
         action = RecommendedAction.ACCEPT
         risk = RiskLevel.LOW
         strength = EvidenceStrength.HIGH
         summary = "Refund already processed. Deterministic fallback recommends accepting."
-        confidence = 0.8
+        confidence = 0.80
     elif completeness >= 50:
         action = RecommendedAction.CONTEST
         risk = RiskLevel.LOW
         strength = EvidenceStrength.HIGH
         summary = "Sufficient verified evidence available. Deterministic fallback recommends contesting."
-        confidence = 0.7
+        confidence = 0.70
     else:
         action = RecommendedAction.REQUEST_MORE_EVIDENCE
         risk = RiskLevel.MEDIUM if completeness >= 30 else RiskLevel.HIGH
         strength = EvidenceStrength.LOW
         summary = "Insufficient or missing evidence. Deterministic fallback recommends gathering more before contesting."
-        confidence = 0.5 if completeness >= 30 else 0.2
+        confidence = 0.50 if completeness >= 30 else 0.20
 
     missing = []
     for et in ["payment", "delivery", "otp", "communication"]:
@@ -130,10 +138,10 @@ def _deterministic_fallback(
         evidence_strength=strength,
         summary=summary,
         key_findings=[Finding(
-            finding=f"Evidence categories present: {', '.join(evidence_types) or 'none'}",
+            finding=f"Evidence types present: {', '.join(evidence_types) or 'none'}. {error_reason}",
             source="deterministic_fallback",
             importance="high",
-            verified=False
+            verified=False,
         )],
         missing_evidence=missing,
         contradictions=["Contradiction detected by rule engine"] if contradictions_found else [],
@@ -143,10 +151,6 @@ def _deterministic_fallback(
     )
 
 
-# --------------------------------------------------------------------------- #
-# Mock agent (when no OpenRouter key is configured)
-# --------------------------------------------------------------------------- #
-
 def _mock_investigate(
     case_id: str,
     db: Session,
@@ -155,12 +159,8 @@ def _mock_investigate(
     completeness: int,
     duplicate_payment_detected: bool = False,
 ) -> AgentRecommendation:
-    """
-    Deterministic mock agent for demos — no LLM call.
-    Produces realistic structured output based on evidence and rules.
-    """
+    """Deterministic mock agent for demos and mock verification tests."""
     findings = []
-
     if "payment" in evidence_types:
         findings.append(Finding(finding="Payment record found and verified", source="payment_provider", importance="high", verified=True))
     if "delivery" in evidence_types:
@@ -206,7 +206,7 @@ def _mock_investigate(
     else:
         return AgentRecommendation(
             recommended_action=RecommendedAction.REQUEST_MORE_EVIDENCE,
-            confidence=0.55 if completeness >= 30 else 0.2,
+            confidence=0.55 if completeness >= 30 else 0.20,
             risk_level=RiskLevel.MEDIUM if completeness >= 30 else RiskLevel.HIGH,
             evidence_strength=EvidenceStrength.LOW,
             summary="Insufficient evidence to safely recommend contesting. Recommend gathering delivery confirmation and communication records.",
@@ -219,45 +219,10 @@ def _mock_investigate(
         )
 
 
-# --------------------------------------------------------------------------- #
-# JSON parsing helper
-# --------------------------------------------------------------------------- #
-
-def _parse_final_json(text: str) -> AgentRecommendation:
-    """Parse and validate the agent's final JSON output. Strips markdown fences if present."""
-    clean = text.strip()
-    # Strip ```json ... ``` or ``` ... ``` fences
-    if clean.startswith("```"):
-        lines = clean.split("\n")
-        lines = [l for l in lines if not l.strip().startswith("```")]
-        clean = "\n".join(lines).strip()
-
-    # Find the JSON object boundaries in case the model added commentary
-    start = clean.find("{")
-    end = clean.rfind("}")
-    if start != -1 and end != -1 and end > start:
-        clean = clean[start:end + 1]
-
-    data = json.loads(clean)
-    return AgentRecommendation(**data)
-
-
-# --------------------------------------------------------------------------- #
-# OpenRouter AI agent
-# --------------------------------------------------------------------------- #
-
-def _run_openrouter_agent(case_id: str, db: Session) -> AgentRecommendation:
-    """
-    Gather evidence via Python tool calls, then send a single OpenRouter
-    chat completion request with the full evidence context and parse the
-    JSON recommendation from the response.
-    """
-    print("DIAGNOSTIC - OpenRouter request started for case " + str(case_id))
-
-    # --- Gather evidence directly via tool functions ---
+def _build_context(case_id: str, db: Session) -> str:
+    """Gather case details and evidence categorized into the 4 canonical categories."""
     evidence_data = {}
     tool_names = ["get_case_details", "search_case_evidence", "get_payment_details", "get_refund_status", "get_rule_flags"]
-
     for tool_name in tool_names:
         try:
             result = execute_tool(tool_name, {"case_id": str(case_id)}, db)
@@ -265,60 +230,101 @@ def _run_openrouter_agent(case_id: str, db: Session) -> AgentRecommendation:
         except Exception as e:
             evidence_data[tool_name] = {"error": str(e)}
 
-    # --- Build context summary for the LLM ---
-    context = json.dumps(evidence_data, indent=2, default=str)
-    user_message = (
-        f"Investigate this payment dispute. Here is all available evidence data:\n\n"
-        f"{context}\n\n"
-        f"Based on this evidence, provide your structured JSON recommendation."
+    from app.db.models import Evidence
+    ev_rows = db.query(Evidence).filter(Evidence.case_id == case_id).all()
+    categorized: dict[str, list] = {
+        "transaction": [],
+        "customer": [],
+        "delivery": [],
+        "merchant": [],
+        "uncategorized": [],
+    }
+    for e in ev_rows:
+        cat = map_to_canonical_category(e.evidence_type, e.category) or "uncategorized"
+        categorized[cat].append({
+            "id": str(e.id),
+            "evidence_type": e.evidence_type,
+            "filename": e.filename,
+            "description": e.description,
+            "verification_status": e.verification_status,
+            "content": e.content,
+            "event_timestamp": str(e.event_timestamp) if e.event_timestamp else None,
+        })
+
+    payload = {
+        "case_details": evidence_data.get("get_case_details"),
+        "rule_flags": evidence_data.get("get_rule_flags"),
+        "evidence_by_category": categorized,
+    }
+    return json.dumps(payload, indent=2, default=str)
+
+
+def _run_claude_agent(case_id: str, db: Session) -> AgentRecommendation:
+    """Call Claude 3.5 Sonnet using Anthropic SDK."""
+    import anthropic
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    model = settings.anthropic_model or "claude-3-5-sonnet-20241022"
+
+    context_json = _build_context(case_id, db)
+    user_prompt = (
+        f"Investigate this payment dispute. Here is all available dispute data and categorized evidence:\n\n"
+        f"{context_json}\n\n"
+        f"Analyze the evidence thoroughly and output your structured JSON recommendation."
     )
 
-    model = settings.openrouter_model or "openrouter/free"
+    response = client.messages.create(
+        model=model,
+        max_tokens=1024,
+        temperature=0.0,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": user_prompt}],
+    )
+
+    content = response.content[0].text
+    rec = _parse_final_json(content)
+    rec.ai_status = "OK"
+    return rec
+
+
+def _run_openrouter_agent(case_id: str, db: Session) -> AgentRecommendation:
+    """Call OpenRouter API."""
+    context_json = _build_context(case_id, db)
+    user_prompt = (
+        f"Investigate this payment dispute. Here is all available dispute data and categorized evidence:\n\n"
+        f"{context_json}\n\n"
+        f"Analyze the evidence thoroughly and output your structured JSON recommendation."
+    )
 
     headers = {
         "Authorization": f"Bearer {settings.openrouter_api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": OPENROUTER_REFERER,
-        "X-Title": OPENROUTER_TITLE,
+        "HTTP-Referer": "https://payproof-frontend.vercel.app",
+        "X-Title": "PayProof AI",
     }
-
     payload = {
-        "model": model,
+        "model": settings.openrouter_model or "anthropic/claude-3.5-sonnet",
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_message},
+            {"role": "user", "content": user_prompt},
         ],
         "max_tokens": 1024,
     }
 
-    with httpx.Client(timeout=60.0) as client:
-        response = client.post(
-            f"{OPENROUTER_API_BASE}/chat/completions",
-            headers=headers,
-            json=payload,
-        )
+    with httpx.Client(timeout=45.0) as client:
+        resp = client.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
 
-    if response.status_code != 200:
-        raise RuntimeError(
-            f"OpenRouter returned HTTP {response.status_code}: {response.text[:300]}"
-        )
+    if resp.status_code != 200:
+        raise RuntimeError(f"OpenRouter returned {resp.status_code}: {resp.text[:200]}")
 
-    response_data = response.json()
-    choices = response_data.get("choices", [])
+    choices = resp.json().get("choices", [])
     if not choices:
-        raise RuntimeError("OpenRouter response contained no choices")
+        raise RuntimeError("OpenRouter returned empty choices")
 
     content = choices[0].get("message", {}).get("content", "")
-    if not content or not content.strip():
-        raise RuntimeError("OpenRouter returned empty content")
+    rec = _parse_final_json(content)
+    rec.ai_status = "OK"
+    return rec
 
-    print("DIAGNOSTIC - OpenRouter request succeeded for case " + str(case_id))
-    return _parse_final_json(content)
-
-
-# --------------------------------------------------------------------------- #
-# Public API
-# --------------------------------------------------------------------------- #
 
 def investigate(
     case_id: str,
@@ -329,36 +335,44 @@ def investigate(
     duplicate_payment_detected: bool = False,
 ) -> AgentRecommendation:
     """
-    Run the dispute investigation agent.
-
-    If OPENROUTER_API_KEY is configured, uses the live OpenRouter AI agent.
-    Otherwise falls back to the deterministic mock agent.
-    On any failure, falls back to deterministic recommendation.
+    Run dispute investigation agent.
+    1. If ANTHROPIC_API_KEY is configured and mock_verifier is False, call Claude 3.5 Sonnet.
+    2. Else if OPENROUTER_API_KEY is configured and mock_verifier is False, call OpenRouter.
+    3. If mock_verifier is True, use deterministic mock agent.
+    4. Otherwise, use deterministic safety fallback.
     """
-    # --- DIAGNOSTICS ---
-    print("DIAGNOSTIC - OPENROUTER_API_KEY configured: " + str(bool(settings.openrouter_api_key)))
-    print("DIAGNOSTIC - OPENROUTER_MODEL: " + str(settings.openrouter_model))
-    print("DIAGNOSTIC - settings.mock_verifier: " + str(settings.mock_verifier))
-    # -------------------
+    if settings.anthropic_api_key and not settings.mock_verifier:
+        try:
+            logger.info("Calling Claude 3.5 Sonnet for case %s", case_id)
+            return _run_claude_agent(case_id, db)
+        except Exception as e:
+            logger.warning("Claude API failed for case %s: %s. Using safety fallback.", case_id, e)
+            rec = _deterministic_fallback(
+                evidence_types, contradictions_found, completeness, duplicate_payment_detected,
+                error_reason=f"Claude API unavailable: {str(e)[:100]}"
+            )
+            rec.ai_status = "AI_ANALYSIS_UNAVAILABLE"
+            return rec
 
-    if not settings.openrouter_api_key:
-        logger.info("No OPENROUTER_API_KEY — using mock investigation agent for case %s", case_id)
-        from app.db.models import AuditLog
-        db.add(AuditLog(
-            case_id=case_id,
-            step="mock_investigation_mode",
-            detail={"info": "Deterministic safety analysis used because live AI verification is unavailable."}
-        ))
-        db.commit()
+    if settings.openrouter_api_key and not settings.mock_verifier:
+        try:
+            logger.info("Calling OpenRouter for case %s", case_id)
+            return _run_openrouter_agent(case_id, db)
+        except Exception as e:
+            logger.warning("OpenRouter failed for case %s: %s. Using safety fallback.", case_id, e)
+            rec = _deterministic_fallback(
+                evidence_types, contradictions_found, completeness, duplicate_payment_detected,
+                error_reason=f"OpenRouter unavailable: {str(e)[:100]}"
+            )
+            rec.ai_status = "FALLBACK"
+            return rec
+
+    if settings.mock_verifier:
         return _mock_investigate(case_id, db, evidence_types, contradictions_found, completeness, duplicate_payment_detected)
 
-    try:
-        return _run_openrouter_agent(case_id, db)
-    except (json.JSONDecodeError, ValidationError) as e:
-        print("DIAGNOSTIC - OpenRouter request failed (JSON/Validation): " + str(e))
-        logger.error("OpenRouter agent output validation failed for case %s: %s", case_id, e)
-        return _deterministic_fallback(evidence_types, contradictions_found, completeness, duplicate_payment_detected)
-    except Exception as e:
-        print("DIAGNOSTIC - OpenRouter request failed: " + str(e))
-        logger.error("OpenRouter agent failed for case %s: %s", case_id, e)
-        return _deterministic_fallback(evidence_types, contradictions_found, completeness, duplicate_payment_detected)
+    rec = _deterministic_fallback(
+        evidence_types, contradictions_found, completeness, duplicate_payment_detected,
+        error_reason="No AI API key configured"
+    )
+    rec.ai_status = "FALLBACK"
+    return rec

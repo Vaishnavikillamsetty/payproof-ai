@@ -2,16 +2,24 @@
 
 export type CaseStatus =
   | 'new'
+  | 'OPEN'
+  | 'open'
   | 'investigating'
+  | 'INVESTIGATING'
   | 'pending_review'
   | 'strong_case'
   | 'weak_case'
   | 'human_review'
+  | 'DECISION_RECORDED'
+  | 'decision_recorded'
   | 'resolved'
+  | 'RESOLVED'
   | 'request_more_evidence'
   | 'evidence_requested'
+  | 'EVIDENCE_REQUESTED'
   | 'escalate'
   | 'escalated'
+  | 'ESCALATED'
   | 'accept'
   | 'contest'
   | 'action_required'
@@ -19,6 +27,7 @@ export type CaseStatus =
   | 'won'
   | 'lost'
   | 'closed'
+  | 'CLOSED'
 
 export interface Case {
   id: string
@@ -30,6 +39,14 @@ export interface Case {
   currency: string
   status: CaseStatus
   ai_recommendation: string | null
+  ai_explanation?: string | null
+  human_decision?: string | null
+  reviewer_id?: string | null
+  decision_timestamp?: string | null
+  reviewer_notes?: string | null
+  evidence_strength?: string | null
+  categories_available?: string[]
+  category_count?: number
   final_action: string | null
   contradiction_detected: boolean
   completeness_score: number | null
@@ -44,7 +61,11 @@ export interface Evidence {
   id: string
   case_id: string
   evidence_type: string
+  category?: string | null
   source_id: string | null
+  filename?: string | null
+  description?: string | null
+  verification_status?: string | null
   content: Record<string, unknown>
   event_timestamp: string | null
   collected_at: string
@@ -82,7 +103,6 @@ export interface AuditEntry {
   timestamp: string
 }
 
-
 export interface EvalMetrics {
   confusion_matrix: {
     true_positives: number
@@ -101,4 +121,14 @@ export interface EvalMetrics {
     unsafe_resolves: number
     unsafe_statement: string
   }
+}
+
+export interface EvidenceUploadPayload {
+  category?: 'transaction' | 'customer' | 'delivery' | 'merchant' | string
+  evidence_type: string
+  filename?: string
+  description?: string
+  file_base64?: string
+  verification_status?: string
+  content?: Record<string, unknown>
 }

@@ -33,6 +33,7 @@ from app.agents.investigation_agent import investigate
 from app.policy import completeness_score, policy_decision
 from app.rules.engine import check_timeline_rules
 from app.lifecycle import lifecycle_for_recommendation
+from app.evidence_categories import compute_category_coverage, evaluate_evidence_strength
 
 logger = logging.getLogger(__name__)
 
@@ -303,10 +304,15 @@ def run_pipeline(case_id: UUID, db: Session | None = None) -> None:
         })
 
         # ------------------------------------------------------------------ #
-        # Update case with final scores                                       #
+        # Update case with final scores and categories                       #
         # ------------------------------------------------------------------ #
-        case.status = status
+        cats_present, _ = compute_category_coverage(evidence_list)
+        case.evidence_strength = evaluate_evidence_strength(evidence_list, cats_present, contradictions_found)
         case.ai_recommendation = recommendation.recommended_action.value
+        case.ai_explanation = recommendation.summary
+        # Preserve recorded human review decisions across re-analysis cycles
+        if not case.human_decision:
+            case.status = status
         payment_evidence = next((e for e in evidence_list if e.evidence_type == "payment"), None)
         if payment_evidence:
             payment_currency = payment_evidence.content.get("currency")
